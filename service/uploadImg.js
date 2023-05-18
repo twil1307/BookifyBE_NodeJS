@@ -10,13 +10,15 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const imagePath = "D:/NodeJS/BookifyBENodeJS/public/images/AIVanGogh3x2_2.png";
+// const imagePath = "D:/NodeJS/BookifyBENodeJS/public/images/AIVanGogh3x2_2.png";
 
-cloudinary.uploader
-  .upload(imagePath)
-  .then((result) => {
-    console.log(result);
-  })
-  .catch((err) => {
-    console.error(err);
-  });
+// cloudinary.uploader
+//   .upload(imagePath)
+//   .then((result) => {
+//     console.log(result);
+//   })
+//   .catch((err) => {
+//     console.error(err);
+//   });
+
+module.exports = cloudinary;
