@@ -18,9 +18,15 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(cors());
 
 // Router require ------------------------------------------
-var indexRouter = require("./routes/test");
+var amenityRouter = require("./routes/amentity");
+var dashboardRouter = require("./routes/dashboard");
+var hotelRouter = require("./routes/hotel");
+var userRouter = require("./routes/user");
 
-app.use("/test", indexRouter);
+app.use("/amenity", amenityRouter);
+app.use("/dashboard", dashboardRouter);
+app.use("/hotel", hotelRouter);
+app.use("/user", userRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
