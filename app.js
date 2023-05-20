@@ -4,6 +4,7 @@ var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 const cors = require("cors");
+require("dotenv").config();
 
 // Database configuration ----------------------------
 require("./config/database");
@@ -15,7 +16,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
-app.use(cors());
+app.use(
+  cors({
+    credentials: true,
+    origin: process.env.FRONTEND_URL ?? "http://localhost:*",
+    optionsSuccessStatus: 200,
+  })
+);
 
 // Router require ------------------------------------------
 var amenityRouter = require("./routes/amentity");
@@ -27,6 +34,23 @@ app.use("/amenity", amenityRouter);
 app.use("/dashboard", dashboardRouter);
 app.use("/hotel", hotelRouter);
 app.use("/user", userRouter);
+
+const Demo = require("./models/Demo");
+app.use("/demo", (req, res, next) => {
+  const urlString = req.url;
+  const parsedUrl = new URL(urlString, `http://${req.headers.host}`);
+  const queryParams = parsedUrl.searchParams;
+
+  const paramsObject = Object.fromEntries(queryParams.entries());
+
+  console.log(paramsObject);
+
+  const schema1Object = new Demo(paramsObject);
+
+  console.log(schema1Object);
+
+  res.json(schema1Object);
+});
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
