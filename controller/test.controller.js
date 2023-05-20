@@ -1,4 +1,4 @@
-// const cloudinary = require("../service/uploadImg");
+const { upload } = require("../service/uploadImg");
 
 // Testing purpose only
 module.exports.sayHello = (req, res, next) => {

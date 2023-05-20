@@ -33,11 +33,16 @@ module.exports.signUpUser = async (req, res) => {
 };
 
 module.exports.updateUser = (req, res) => {
-  const userObj = new User(req.body);
+  const file = req.file;
+  const imageUrl = file.path;
+  const userObj = req.body;
+  userObj.avatar = imageUrl.split("public")[1].replaceAll("\\", "/");
+  userObj.dob = new Date(userObj.dob).toDateString();
+  const userId = req.params.userId;
 
-  User.findOne({ _id: req._id })
+  User.findByIdAndUpdate(userId, userObj, { new: true })
     .then((user) => {
-      return res.json(user);
+      return res.status(200).json(user);
     })
     .catch((err) => {
       return res.status(500).json({ message: err.message });
