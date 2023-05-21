@@ -22,6 +22,7 @@ module.exports = (req, res, next) => {
       const idFind = decoded._id;
 
       User.findOne({ _id: idFind })
+        .select("-password")
         .then((user) => {
           if (user) {
             req.user = user;

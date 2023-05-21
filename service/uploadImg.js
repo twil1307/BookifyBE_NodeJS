@@ -65,6 +65,7 @@ const hotelImageUploader = multer({ storage: storageHotel });
 // upload local
 const userImageUploaderLocal = multer({ storage: storageUserLocal });
 const hotelImageUploaderLocal = multer({ storage: storageHotelLocal });
+const formDataRetrieve = multer();
 
 module.exports = {
   cloudinary,
@@ -72,4 +73,5 @@ module.exports = {
   hotelImageUploader,
   userImageUploaderLocal,
   hotelImageUploaderLocal,
+  formDataRetrieve,
 };

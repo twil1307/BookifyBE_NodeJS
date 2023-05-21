@@ -7,6 +7,22 @@ const {
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 
+module.exports.getUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId).select("-password");
+
+    if (user) {
+      return res.status(200).json(user);
+    } else {
+      return res.status(404).json({ message: "User not found" });
+    }
+  } catch (error) {
+    console.log(error);
+    // Handle the error here
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 module.exports.signUpUser = async (req, res) => {
   try {
     // check existed user
@@ -32,21 +48,34 @@ module.exports.signUpUser = async (req, res) => {
   }
 };
 
-module.exports.updateUser = (req, res) => {
-  const file = req.file;
-  const imageUrl = file.path;
-  const userObj = req.body;
-  userObj.avatar = imageUrl.split("public")[1].replaceAll("\\", "/");
-  userObj.dob = new Date(userObj.dob).toDateString();
-  const userId = req.params.userId;
+module.exports.updateUser = async (req, res) => {
+  try {
+    const file = req.file;
+    let imageUrl = null;
+    const userObj = req.body;
+    if (file) {
+      imageUrl = file.path;
+      userObj.avatar = imageUrl.split("public")[1].replaceAll("\\", "/");
+    }
+    if (userObj.dob) {
+      userObj.dob = new Date(userObj.dob).toDateString();
+    }
+    const userId = req.params.userId;
 
-  User.findByIdAndUpdate(userId, userObj, { new: true })
-    .then((user) => {
-      return res.status(200).json(user);
-    })
-    .catch((err) => {
-      return res.status(500).json({ message: err.message });
-    });
+    User.findByIdAndUpdate(userId, userObj, { new: true })
+      .then((user) => {
+        return res.status(200).json(user);
+      })
+      .catch((err) => {
+        return res.status(500).json({ message: err.message });
+      });
+
+    // return res.status(200).json({ userObj });
+  } catch (error) {
+    console.log(error);
+    // Handle the error here
+    return res.status(500).json({ error: error.message });
+  }
 };
 
 module.exports.logIn = (req, res) => {
@@ -82,7 +111,7 @@ module.exports.logIn = (req, res) => {
                     _id: user._id,
                     role: user.role,
                     username: user.username,
-                    displayName: user.subname + user.name,
+                    displayName: `${user.subName} ${user.name}`,
                   },
                 });
             }
@@ -150,4 +179,46 @@ module.exports.refreshNewTokens = (req, res, next) => {
         console.log(err);
       });
   });
+};
+
+module.exports.compareCurrentPassword = async (req, res) => {
+  try {
+    // Hash user password
+    const passwordPlain = req.body.currentPassword;
+
+    const { password } = await User.findById(req.user._id).select("password");
+
+    const compareRes = await comparePassword(passwordPlain, password);
+
+    if (compareRes) {
+      return res.status(202).json({
+        message: "Password matched",
+      });
+    } else {
+      return res.status(401).json({
+        message: "Wtf, who tf",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    // Handle the error here
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+module.exports.changePassword = async (req, res) => {
+  const newPasword = req.body.newPassword;
+  const userId = req.params.userId;
+
+  const newHashPassword = await hashPassword(newPasword);
+
+  User.updateOne({ _id: userId }, { $set: { password: newHashPassword } })
+    .then((user) => {
+      return res
+        .status(200)
+        .json({ message: "Passwords updated successfully" });
+    })
+    .catch((err) => {
+      return res.status(500).json({ message: err.message });
+    });
 };

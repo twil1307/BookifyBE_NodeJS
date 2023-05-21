@@ -6,10 +6,6 @@ module.exports = (req, res, next) => {
     const userId = mongoose.Types.ObjectId(req.params.userId);
     const userObjId = req.user._id;
 
-    console.log(userId, userObjId);
-
-    console.log(userId);
-
     if (!userId.equals(userObjId)) {
       return res
         .status(401)
