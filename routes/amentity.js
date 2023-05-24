@@ -1,9 +1,16 @@
 var express = require("express");
 var router = express.Router();
-const testMiddleware = require("../middleware/testMiddleware");
-const testController = require("../controller/test.controller");
+const jwtMiddleware = require("../middleware/jwtMiddleware");
+const { hasRole } = require("../middleware/userAuthMiddleware");
+const amenityController = require("../controller/amenity.controller");
+const { userImageUploaderLocal } = require("../service/uploadImg");
 
-/* GET home page. */
-router.get("/", testMiddleware, testController.sayHello);
+router.post(
+  "/type",
+  userImageUploaderLocal.none(),
+  jwtMiddleware,
+  hasRole(3),
+  amenityController.signNewAmenityType
+);
 
 module.exports = router;

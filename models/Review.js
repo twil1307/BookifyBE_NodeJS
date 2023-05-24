@@ -1,43 +1,41 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const hotelSchema = new Schema({
-  hotelId: {
+const ReviewSchema = new Schema({
+  reviewId: {
     type: mongoose.Schema.Types.ObjectId,
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    required: true,
     ref: "User",
   },
-  hotelType: {
+  hotelId: {
     type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    ref: "HotelType",
+    ref: "Hotel",
   },
-  hotelName: {
-    type: String,
-    required: [true, "hotelName required"],
+  sourceId: {
+    type: Number,
   },
-  backgroundImg: {
-    type: String,
-    required: [true, "backgroundImg required"],
+  communicationPoint: {
+    type: Number,
+    required: [true, "Communication point required"],
   },
-  isVerified: {
-    type: Boolean,
-    default: false,
+  accuracyPoint: {
+    type: Number,
+    default: [true, "Accuracy point required"],
   },
-  isAllowPet: {
-    type: Boolean,
-    default: false,
+  locationPoint: {
+    type: Number,
+    default: [true, "Location point required"],
   },
-  isHasCamera: {
-    type: Boolean,
-    default: false,
+  valuePoint: {
+    type: Number,
+    default: [true, "Value point required"],
   },
   description: {
-    type: String,
-    required: [true, "Description required"],
+    type: Date,
+    required: true,
+    default: Data.now,
   },
   country: {
     type: String,
@@ -76,11 +74,11 @@ const hotelSchema = new Schema({
     required: true,
   },
   rating: {
-    type: Number,
+    type: Rating,
     default: 0,
   },
   hotelAmenities: {
-    type: [mongoose.Schema.Types.ObjectId],
+    type: mongoose.Schema.Types.ObjectId,
     ref: "Amenity",
   },
   images: {
@@ -90,30 +88,29 @@ const hotelSchema = new Schema({
     },
     required: false,
   },
-  reviews: {
-    type: [mongoose.Schema.Types.ObjectId],
-    ref: "HotelType",
+  selfDescription: {
+    type: String,
+    required: false,
   },
-  roomType: [
-    {
-      type: [mongoose.Schema.Types.ObjectId],
-      ref: "RoomType",
-    },
-  ],
-  bookmarkedBy: [
-    {
-      type: [mongoose.Schema.Types.ObjectId],
-      ref: "User",
-    },
-  ],
+  salt: {
+    type: String,
+    required: false,
+  },
+  bankingAccountNumber: {
+    type: String,
+    required: false,
+  },
+  dob: {
+    type: Date,
+    required: false,
+  },
   signAt: {
     type: Date,
     required: true,
     default: Date.now,
   },
-
   // followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   // following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 });
 
-module.exports = mongoose.model("Hotel", hotelSchema);
+module.exports = mongoose.model("Review", ReviewSchema);

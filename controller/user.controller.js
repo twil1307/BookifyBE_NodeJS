@@ -3,9 +3,11 @@ const { hashPassword, comparePassword } = require("../service/passwordService");
 const {
   generateAccessToken,
   generateRefreshToken,
+  expireTokens,
 } = require("../service/jwtService");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
+const cookie = require("cookie");
 
 module.exports.getUser = async (req, res) => {
   try {
@@ -207,18 +209,28 @@ module.exports.compareCurrentPassword = async (req, res) => {
 };
 
 module.exports.changePassword = async (req, res) => {
-  const newPasword = req.body.newPassword;
-  const userId = req.params.userId;
+  try {
+    const newPasword = req.body.newPassword;
+    const userId = req.params.userId;
 
-  const newHashPassword = await hashPassword(newPasword);
+    const newHashPassword = await hashPassword(newPasword);
 
-  User.updateOne({ _id: userId }, { $set: { password: newHashPassword } })
-    .then((user) => {
+    const user = await User.updateOne(
+      { _id: userId },
+      { $set: { password: newHashPassword } }
+    );
+
+    if (user) {
+      // Clear the cookie by setting an expired token value and past expiration date
+      res.setHeader("Set-Cookie", expireTokens);
+
       return res
         .status(200)
         .json({ message: "Passwords updated successfully" });
-    })
-    .catch((err) => {
-      return res.status(500).json({ message: err.message });
-    });
+    } else {
+      return res.status(500).json({ message: "Passwords updated failed" });
+    }
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
 };
