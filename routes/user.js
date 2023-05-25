@@ -1,15 +1,12 @@
 var express = require("express");
 var router = express.Router();
-const testMiddleware = require("../middleware/testMiddleware");
-const testController = require("../controller/test.controller");
 const userController = require("../controller/user.controller");
-const userMiddleware = require("../middleware/jwtMiddleware");
 const {
   userImageUploaderLocal,
   formDataRetrieve,
 } = require("../service/uploadImg");
 const jwtMiddleware = require("../middleware/jwtMiddleware");
-const isExactUser = require("../middleware/isExactUser");
+const { isExactUser } = require("../middleware/userAuthMiddleware");
 
 /* GET home page. */
 router.get("/:userId", formDataRetrieve.none(), userController.getUser);
@@ -41,7 +38,7 @@ router.put(
   userController.compareCurrentPassword
 );
 
-// compare password
+// change password
 router.put(
   "/changePassword/:userId",
   jwtMiddleware,

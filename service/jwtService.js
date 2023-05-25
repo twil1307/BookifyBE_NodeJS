@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const cookie = require("cookie");
 
 const generateAccessToken = (userObj) => {
   const accessToken = jwt.sign(
@@ -21,4 +22,22 @@ const generateRefreshToken = (userObj) => {
   return refreshToken;
 };
 
-module.exports = { generateAccessToken, generateRefreshToken };
+// Clear the cookie by setting an expired token value and past expiration date
+const expireTokens = [
+  cookie.serialize("accessToken", "", {
+    httpOnly: true,
+    expires: new Date(0),
+    path: "/",
+    secure: false, // Set to true if using HTTPS
+    sameSite: "strict",
+  }),
+  cookie.serialize("refreshToken", "", {
+    httpOnly: true,
+    expires: new Date(0),
+    path: "/",
+    secure: false, // Set to true if using HTTPS
+    sameSite: "strict",
+  }),
+];
+
+module.exports = { generateAccessToken, generateRefreshToken, expireTokens };

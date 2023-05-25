@@ -1,18 +1,13 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const amenitySchema = new Schema({
-  amenityId: {
+const hotelTypeSchema = new Schema({
+  hotelTypeId: {
     type: mongoose.Schema.Types.ObjectId,
   },
-  amenityName: {
+  hotelType: {
     type: String,
     required: true,
-  },
-  amenityTypeId: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    ref: "AmenityType",
   },
   icon: {
     type: String,
@@ -23,4 +18,4 @@ const amenitySchema = new Schema({
   // following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 });
 
-module.exports = mongoose.model("Amenity", amenitySchema);
+module.exports = mongoose.model("HotelType", hotelTypeSchema);

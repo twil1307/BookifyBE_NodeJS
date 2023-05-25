@@ -32,12 +32,10 @@ module.exports = (req, res, next) => {
           }
         })
         .catch((err) => {
-          console.log("haha");
           console.log(err);
         });
     });
   } catch (error) {
-    console.log("error here");
     return res.json({ error: error });
   }
 };
