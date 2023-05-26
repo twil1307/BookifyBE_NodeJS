@@ -8,7 +8,7 @@ const {
 const jwtMiddleware = require("../middleware/jwtMiddleware");
 const { isExactUser } = require("../middleware/userAuthMiddleware");
 
-/* GET home page. */
+/* GET user */
 router.get("/:userId", formDataRetrieve.none(), userController.getUser);
 
 // signup new user

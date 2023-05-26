@@ -4,7 +4,7 @@ const hotelController = require("../controller/hotel.controller");
 const jwtMiddleware = require("../middleware/jwtMiddleware");
 const { hasRole } = require("../middleware/userAuthMiddleware");
 const {
-  hotelImageUploader,
+  hotelImageUploaderLocal,
   formDataRetrieve,
 } = require("../service/uploadImg");
 
@@ -13,13 +13,12 @@ router.post(
   "/",
   jwtMiddleware,
   hasRole(3),
-  hotelImageUploader.single("backgroundImage"),
-  hotelImageUploader.array("hotelImage", 5),
-  hotelImageUploader.array("viewImage", 5),
-  formDataRetrieve.none(),
-  (req, res) => {
-    return res.json({ message: "Hello" });
-  }
+  hotelImageUploaderLocal.fields([
+    { name: "backgroundImage", maxCount: 1 },
+    { name: "hotelImage", maxCount: 5 },
+    { name: "viewImage", maxCount: 5 },
+  ]),
+  hotelController.signNewHotel
 );
 
 router.post(

@@ -4,6 +4,7 @@ var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 const cors = require("cors");
+const globalErrorHandler = require("./utils/globalErrorHandler");
 require("dotenv").config();
 
 // Database configuration ----------------------------
@@ -29,43 +30,23 @@ var amenityRouter = require("./routes/amentity");
 var dashboardRouter = require("./routes/dashboard");
 var hotelRouter = require("./routes/hotel");
 var userRouter = require("./routes/user");
+const AppError = require("./utils/appError");
 
 app.use("/amenity", amenityRouter);
 app.use("/dashboard", dashboardRouter);
 app.use("/hotel", hotelRouter);
 app.use("/user", userRouter);
 
-const Demo = require("./models/Demo");
-app.use("/demo", (req, res, next) => {
-  const urlString = req.url;
-  const parsedUrl = new URL(urlString, `http://${req.headers.host}`);
-  const queryParams = parsedUrl.searchParams;
-
-  const paramsObject = Object.fromEntries(queryParams.entries());
-
-  console.log(paramsObject);
-
-  const schema1Object = new Demo(paramsObject);
-
-  console.log(schema1Object);
-
-  res.json(schema1Object);
-});
-
 // catch 404 and forward to error handler
-app.use(function (req, res, next) {
-  next(createError(404));
+app.use((req, res, next) => {
+  // next(createError(404));
+  // const err = new Error(`Can't find ${req.originalUrl} on this server`);
+  // err.status = 404;
+
+  next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));
 });
 
-// error handler
-app.use(function (err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get("env") === "development" ? err : {};
-
-  // render the error page
-  res.status(err.status || 500);
-  res.render("error");
-});
+// global error handler
+app.use(globalErrorHandler);
 
 module.exports = app;

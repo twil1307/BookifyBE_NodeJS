@@ -7,130 +7,96 @@ const {
 } = require("../service/jwtService");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
-const cookie = require("cookie");
+const AppError = require("../utils/appError");
+const catchAsync = require("../utils/catchAsync");
 
-module.exports.getUser = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.userId).select("-password");
+module.exports.getUser = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.params.userId).select("-password");
 
-    if (user) {
-      return res.status(200).json(user);
-    } else {
-      return res.status(404).json({ message: "User not found" });
-    }
-  } catch (error) {
-    console.log(error);
-    // Handle the error here
-    return res.status(500).json({ error: "Internal Server Error" });
+  if (user) {
+    return res.status(200).json(user);
+  } else {
+    return next(new AppError("User not found", 404));
   }
-};
+});
 
-module.exports.signUpUser = async (req, res) => {
-  try {
-    // check existed user
-    const user = await User.findOne({ username: req.body.username });
-    if (user) {
-      return res.status(422).json({ error: "Username already exists" });
-    }
-
-    // Hash user password
-    const userObj = new User(req.body);
-    const hashedPassword = await hashPassword(userObj.password);
-    userObj.password = hashedPassword;
-
-    // Save user
-    await userObj.save();
-    return res.status(200).json({
-      message: "User saved successfully",
-    });
-  } catch (error) {
-    console.log(error);
-    // Handle the error here
-    return res.status(500).json({ error: "Internal Server Error" });
+module.exports.signUpUser = catchAsync(async (req, res, next) => {
+  // check existed user
+  const user = await User.findOne({ username: req.body.username });
+  if (user) {
+    // return res.status(422).json({ error: "Username already exists" });
+    return next(new AppError("Username already exists", 422));
   }
-};
 
-module.exports.updateUser = async (req, res) => {
-  try {
-    const file = req.file;
-    let imageUrl = null;
-    const userObj = req.body;
-    if (file) {
-      imageUrl = file.path;
-      userObj.avatar = imageUrl.split("public")[1].replaceAll("\\", "/");
-    }
-    if (userObj.dob) {
-      userObj.dob = new Date(userObj.dob).toDateString();
-    }
-    const userId = req.params.userId;
+  // Hash user password
+  const userObj = new User(req.body);
+  const hashedPassword = await hashPassword(userObj.password);
+  userObj.password = hashedPassword;
 
-    User.findByIdAndUpdate(userId, userObj, { new: true })
-      .then((user) => {
-        return res.status(200).json(user);
-      })
-      .catch((err) => {
-        return res.status(500).json({ message: err.message });
-      });
+  // Save user
+  await userObj.save();
+  return res.status(200).json({
+    message: "User saved successfully",
+  });
+});
 
-    // return res.status(200).json({ userObj });
-  } catch (error) {
-    console.log(error);
-    // Handle the error here
-    return res.status(500).json({ error: error.message });
+module.exports.updateUser = catchAsync(async (req, res, next) => {
+  const file = req.file;
+  let imageUrl = null;
+  const userObj = req.body;
+  if (file) {
+    imageUrl = file.path;
+    userObj.avatar = imageUrl.split("public")[1].replaceAll("\\", "/");
   }
-};
+  if (userObj.dob) {
+    userObj.dob = new Date(userObj.dob).toDateString();
+  }
+  const userId = req.params.userId;
 
-module.exports.logIn = (req, res) => {
+  const newUser = await User.findByIdAndUpdate(userId, userObj, { new: true });
+  return res.status(200).json({
+    user: newUser,
+  });
+});
+
+module.exports.logIn = catchAsync(async (req, res, next) => {
   const userObj = new User(req.body);
 
-  User.findOne({ username: userObj.username })
-    .then((user) => {
-      if (user) {
-        comparePassword(userObj.password, user.password)
-          .then((result) => {
-            console.log(result);
-            if (!result) {
-              return res.status(422).json({
-                error: "Password is incorrect",
-              });
-            } else {
-              const accessToken = generateAccessToken(user);
-              const refreshToken = generateRefreshToken(user);
+  const user = await User.findOne({ username: userObj.username });
 
-              return res
-                .status(200)
-                .cookie("accessToken", "Bearer " + accessToken, {
-                  httpOnly: true,
-                  secure: false,
-                })
-                .cookie("refreshToken", "Refresh " + refreshToken, {
-                  httpOnly: true,
-                  secure: false,
-                })
-                .json({
-                  message: "Login successfully",
-                  user: {
-                    _id: user._id,
-                    role: user.role,
-                    username: user.username,
-                    displayName: `${user.subName} ${user.name}`,
-                  },
-                });
-            }
-          })
-          .catch((error) => {
-            console.log(error);
-          });
-      } else {
-        return res.status(422).json({
-          error: "No user found",
+  if (user) {
+    const result = await comparePassword(userObj.password, user.password);
+
+    if (!result) {
+      return next(new AppError("Password is incorrect", 403));
+    } else {
+      const accessToken = generateAccessToken(user);
+      const refreshToken = generateRefreshToken(user);
+
+      return res
+        .status(200)
+        .cookie("accessToken", "Bearer " + accessToken, {
+          httpOnly: true,
+          secure: false,
+        })
+        .cookie("refreshToken", "Refresh " + refreshToken, {
+          httpOnly: true,
+          secure: false,
+        })
+        .json({
+          message: "Login successfully",
+          user: {
+            _id: user._id,
+            role: user.role,
+            username: user.username,
+            displayName: `${user.subName} ${user.name}`,
+          },
         });
-      }
-    })
-    .catch((err) => {
-      return res.status(500).json({ message: err.message });
-    });
-};
+    }
+  } else {
+    return next(new AppError("No user found", 404));
+  }
+});
 
 module.exports.refreshNewTokens = (req, res, next) => {
   const { refreshToken } = req.cookies;
@@ -183,54 +149,40 @@ module.exports.refreshNewTokens = (req, res, next) => {
   });
 };
 
-module.exports.compareCurrentPassword = async (req, res) => {
-  try {
-    // Hash user password
-    const passwordPlain = req.body.currentPassword;
+module.exports.compareCurrentPassword = catchAsync(async (req, res, next) => {
+  // Hash user password
+  const passwordPlain = req.body.currentPassword;
 
-    const { password } = await User.findById(req.user._id).select("password");
+  const { password } = await User.findById(req.user._id).select("password");
 
-    const compareRes = await comparePassword(passwordPlain, password);
+  const compareRes = await comparePassword(passwordPlain, password);
 
-    if (compareRes) {
-      return res.status(202).json({
-        message: "Password matched",
-      });
-    } else {
-      return res.status(401).json({
-        message: "Wtf, who tf",
-      });
-    }
-  } catch (error) {
-    console.log(error);
-    // Handle the error here
-    return res.status(500).json({ error: "Internal Server Error" });
+  if (compareRes) {
+    return res.status(202).json({
+      message: "Password matched",
+    });
+  } else {
+    return next(new AppError("Password is incorrect", 401));
   }
-};
+});
 
-module.exports.changePassword = async (req, res) => {
-  try {
-    const newPasword = req.body.newPassword;
-    const userId = req.params.userId;
+module.exports.changePassword = catchAsync(async (req, res, next) => {
+  const newPasword = req.body.newPassword;
+  const userId = req.params.userId;
 
-    const newHashPassword = await hashPassword(newPasword);
+  const newHashPassword = await hashPassword(newPasword);
 
-    const user = await User.updateOne(
-      { _id: userId },
-      { $set: { password: newHashPassword } }
-    );
+  const user = await User.updateOne(
+    { _id: userId },
+    { $set: { password: newHashPassword } }
+  );
 
-    if (user) {
-      // Clear the cookie by setting an expired token value and past expiration date
-      res.setHeader("Set-Cookie", expireTokens);
+  if (user) {
+    // Clear the cookie by setting an expired token value and past expiration date
+    res.setHeader("Set-Cookie", expireTokens);
 
-      return res
-        .status(200)
-        .json({ message: "Passwords updated successfully" });
-    } else {
-      return res.status(500).json({ message: "Passwords updated failed" });
-    }
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return res.status(200).json({ message: "Passwords updated successfully" });
+  } else {
+    return next(new AppError("Passwords updated failed", 500));
   }
-};
+});
