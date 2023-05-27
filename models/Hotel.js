@@ -19,6 +19,7 @@ const hotelSchema = new Schema(
     hotelName: {
       type: String,
       required: [true, "hotelName required"],
+      unique: true,
     },
     backgroundImg: {
       type: String,
@@ -72,7 +73,7 @@ const hotelSchema = new Schema(
       type: String,
       required: true,
     },
-    averagePirce: {
+    averagePrice: {
       type: Number,
       required: true,
     },

@@ -38,7 +38,7 @@ app.use("/hotel", hotelRouter);
 app.use("/user", userRouter);
 
 // catch 404 and forward to error handler
-app.use((req, res, next) => {
+app.all("*", (req, res, next) => {
   // next(createError(404));
   // const err = new Error(`Can't find ${req.originalUrl} on this server`);
   // err.status = 404;

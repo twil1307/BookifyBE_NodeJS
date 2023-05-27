@@ -26,11 +26,34 @@ module.exports.signNewHotel = async (req, res, next) => {
 
     // parse data
     const hotelSign = new Hotel(req.body);
-    const roomTypeSign = new RoomType(req.body);
+    // let roomTypeSign = new RoomType(req.body);
+    const {
+      roomPrice,
+      bedType,
+      bedNum,
+      bathroomType,
+      bathNum,
+      roomNum,
+      maxGuest,
+      bedroomNum,
+      isbathPrivate,
+      ...rest
+    } = req.body;
+
+    let roomTypeSign = {
+      roomPrice,
+      bedType,
+      bedNum,
+      bathroomType,
+      bathNum,
+      maxGuest,
+      bedroomNum,
+      isbathPrivate,
+    };
+
+    console.log(roomTypeSign);
+
     const hotelAmenitySign = JSON.parse(req.body.amenities);
-    const hotelAmenitiesName = hotelAmenitySign.map(
-      (amenity) => amenity.amenityName
-    );
 
     // pushing data to Hotel missing data
     hotelSign.userId = req.user._id;
@@ -42,64 +65,57 @@ module.exports.signNewHotel = async (req, res, next) => {
       hotelSign.images.push(element);
     });
 
-    // Insert amenities
-    // const newAmenities = await Amenity.insertMany(hotelAmenitySign);
-    const listFilterAmenities = await getAmenitiesInsertNotDuplicate(
-      hotelAmenitySign
-    );
+    // get new amenities which is not existed in the DB
+    const newAmenities = await getAmenitiesInsertNotDuplicate(hotelAmenitySign);
 
-    console.log(listFilterAmenities);
-
+    // get list id of existed amenties in DB
     const listExistedAmenitiesAdd = await getListAmenityDuplicatedId(
       hotelAmenitySign,
-      listFilterAmenities
+      newAmenities
     );
 
-    console.log(listExistedAmenitiesAdd);
+    // Add new amenities (not existed) return ID
+    const newAmenitiesId = await addNewAmenityNotExisted(newAmenities, session);
 
-    // Check existed amenities
-    // if (listFilterAmenities.length == 0) {
-    //   let listAmenityExisted = hotelAmenitiesName
-    //     .map((element) => element.amenityName)
-    //     .join(", ");
+    // Pass existed amenities ids and new amenities ids
+    hotelSign.hotelAmenities = [...listExistedAmenitiesAdd, ...newAmenitiesId];
 
-    //   return next(
-    //     new AppError(`Amenity ${listAmenityExisted} is already defined`, 403)
-    //   );
-    // }
+    // add new roomtype
+    const roomsData = Array.from({ length: roomNum }, () => {
+      return roomTypeSign;
+    });
 
-    // Insert new non-duplicate amenities
-    // const insertedAmenities = await Amenity.insertMany(listFilterAmenities);
+    const listRoomId = await addNewRoomType(roomsData, session);
 
-    // if (!insertedAmenities) {
-    //   return next(new AppError(`Insert amenity failed`, 500));
-    // }
+    hotelSign.roomType = [...listRoomId];
 
-    // console.log(insertedAmenities);
+    // Saving new hotel
+    const hotelSignComplete = await hotelSign.save();
 
-    // // get id from inserted amenity
-    // const amenitiesIdAdded = insertedAmenities.map((amenity) => amenity._id);
-    // hotelSign.hotelAmenities = [...amenitiesIdAdded];
-
+    await session.commitTransaction();
     session.endSession();
 
-    // Saving
     return res.status(200).json({
-      message: "Success",
+      message: "Sign up new Hotel successfully",
       data: {
-        hotel: hotelSign,
-        hotelAmenity: hotelAmenitySign,
-        roomType: roomTypeSign,
+        hotel: hotelSignComplete,
       },
     });
   } catch (error) {
     console.log(error);
-    // Handle the error here
     await session.abortTransaction();
 
     session.endSession();
 
-    return res.status(500).json({ error: "Internal Server Error" });
+    if (error.code === 11000) {
+      return res.status(401).json({
+        message: "Hotel name is existed",
+      });
+    } else {
+      return res.status(401).json({
+        message: error.message,
+      });
+    }
   }
 };
 
@@ -121,18 +137,39 @@ const getListAmenityDuplicatedId = async (
   hotelAmenitySign,
   listAmenityDuplicated
 ) => {
-  const duplatedListName = listAmenityDuplicated.map(
+  const newListName = listAmenityDuplicated.map(
     (element) => element.amenityName
   );
-  console.log(duplatedListName);
 
-  const newArr = hotelAmenitySign.filter((item) => {
-    return !duplatedListName.includes(item.amenityName);
+  const duplicatedObjArr = hotelAmenitySign.filter((item) => {
+    return !newListName.includes(item.amenityName);
   });
 
-  console.log(newArr);
+  const duplicatedName = duplicatedObjArr.map((item) => item.amenityName);
 
-  return newArr;
+  const listId = await Amenity.find({
+    amenityName: { $in: duplicatedName },
+  }).select("_id");
+
+  return listId;
+};
+
+const addNewAmenityNotExisted = async (newAmenities, session) => {
+  const listId = await Amenity.insertMany(newAmenities, {
+    rawResult: true,
+    session,
+  });
+
+  return Object.values(listId.insertedIds);
+};
+
+const addNewRoomType = async (listRoomType, session) => {
+  const listId = await RoomType.insertMany(listRoomType, {
+    rawResult: true,
+    session,
+  });
+
+  return Object.values(listId.insertedIds);
 };
 
 module.exports.signNewHotelType = async (req, res) => {
