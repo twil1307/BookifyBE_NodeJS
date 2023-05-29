@@ -12,6 +12,7 @@ const roomTypeSchema = new Schema({
   bedType: {
     type: String,
     required: [true, "Bed type required"],
+    default: "Normal",
   },
   bedNum: {
     type: Number,
@@ -20,6 +21,7 @@ const roomTypeSchema = new Schema({
   bathroomType: {
     type: String,
     required: [true, "Bathroom type required"],
+    default: "Normal",
   },
   bathNum: {
     type: Number,
@@ -27,7 +29,7 @@ const roomTypeSchema = new Schema({
   },
   roomNum: {
     type: Number,
-    required: [true, "Total number of room required"],
+    required: false,
   },
   maxGuest: {
     type: Number,

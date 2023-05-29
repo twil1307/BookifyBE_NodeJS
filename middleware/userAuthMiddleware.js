@@ -1,24 +1,19 @@
 require("dotenv").config();
 const mongoose = require("mongoose");
+const catchAsync = require("../utils/catchAsync");
 
-const isExactUser = (req, res, next) => {
-  try {
-    const userId = mongoose.Types.ObjectId(req.params.userId);
-    const userObjId = req.user._id;
+const isExactUser = catchAsync(async (req, res, next) => {
+  const userId = mongoose.Types.ObjectId(req.params.userId);
+  const userObjId = req.user._id;
 
-    if (!userId.equals(userObjId)) {
-      return res
-        .status(401)
-        .json({ error: "You are not authorized to access this" });
-    } else {
-      next();
-    }
-  } catch (error) {
-    return res.status(404).json({
-      error: "No user found",
-    });
+  if (!userId.equals(userObjId)) {
+    return res
+      .status(401)
+      .json({ error: "You are not authorized to access this" });
+  } else {
+    next();
   }
-};
+});
 
 const hasRole = (role) => {
   return (req, res, next) => {
