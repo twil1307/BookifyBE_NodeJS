@@ -29,4 +29,8 @@ router.post(
   hotelController.signNewHotelType
 );
 
+router.get("/:hotelId", hotelController.getHotel);
+
+router.get("/", hotelController.getAllHotels);
+
 module.exports = router;

@@ -186,3 +186,27 @@ module.exports.changePassword = catchAsync(async (req, res, next) => {
     return next(new AppError("Passwords updated failed", 500));
   }
 });
+
+module.exports.addOrRemoveFavorite = catchAsync(async (req, res, next) => {
+  const hotelIdBookmark = req.params.hotelId;
+
+  console.log(hotelIdBookmark);
+
+  const currentUser = await User.findById(req.user.id);
+
+  if (!currentUser.hotelBookmarked.includes(hotelIdBookmark)) {
+    currentUser.hotelBookmarked.push(hotelIdBookmark);
+  } else {
+    // remove hotelId when found existed in array
+    currentUser.hotelBookmarked.splice(
+      currentUser.hotelBookmarked.indexOf(hotelIdBookmark),
+      1
+    );
+  }
+
+  const newUserHotelbookMarked = await currentUser.save();
+
+  return res.json({
+    user: newUserHotelbookMarked,
+  });
+});

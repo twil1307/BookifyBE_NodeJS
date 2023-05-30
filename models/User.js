@@ -87,12 +87,10 @@ const userSchema = new Schema(
       required: true,
       default: Date.now,
     },
-    hotelBookmarked: [
-      {
-        type: [mongoose.Schema.Types.ObjectId],
-        ref: "Hotel",
-      },
-    ],
+    hotelBookmarked: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "Hotel",
+    },
 
     // followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     // following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],

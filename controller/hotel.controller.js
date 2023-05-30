@@ -11,18 +11,28 @@ module.exports.signNewHotel = async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    // get image paths only
-    const backgroundImage = req.files["backgroundImage"][0].path
-      .split("public")[1]
-      .replaceAll("\\", "/");
-    const hotelImages = req.files["hotelImage"].map(({ path }) => ({
-      imagePath: path.split("public")[1].replaceAll("\\", "/"),
-      imageType: 1,
-    }));
-    const viewImages = req.files["viewImage"].map(({ path }) => ({
-      imagePath: path.split("public")[1].replaceAll("\\", "/"),
-      imageType: 2,
-    }));
+    console.log(req.files);
+    // Get image paths only for backgroundImage
+    let backgroundImage = "";
+    if (
+      req.files["backgroundImage"] &&
+      req.files["backgroundImage"].length > 0
+    ) {
+      backgroundImage = req.files["backgroundImage"][0].path
+        .split("public")[1]
+        .replaceAll("\\", "/");
+    }
+
+    const hotelImages =
+      req.files["hotelImage"]?.map(({ path }) => ({
+        imagePath: path.split("public")[1].replaceAll("\\", "/"),
+        imageType: 1,
+      })) || [];
+    const viewImages =
+      req.files["viewImage"]?.map(({ path }) => ({
+        imagePath: path.split("public")[1].replaceAll("\\", "/"),
+        imageType: 2,
+      })) || [];
 
     // parse data
     const hotelSign = new Hotel(req.body);
@@ -87,7 +97,7 @@ module.exports.signNewHotel = async (req, res, next) => {
 
     const listRoomId = await addNewRoomType(roomsData, session);
 
-    hotelSign.roomType = [...listRoomId];
+    hotelSign.roomType = [...listRoomId.flat()];
 
     // Saving new hotel
     const hotelSignComplete = await hotelSign.save();
@@ -196,3 +206,29 @@ module.exports.signNewHotelType = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+module.exports.getHotel = catchAsync(async (req, res, next) => {
+  const hotel = await Hotel.findById(req.params.hotelId)
+    .populate("hotelType")
+    .populate("userId", "-password -hotelBookmarked")
+    .populate("hotelAmenities")
+    .populate("roomType");
+
+  if (hotel) {
+    return res.status(200).json(hotel);
+  } else {
+    return next(new AppError("Hotel not found", 404));
+  }
+});
+
+module.exports.getAllHotels = catchAsync(async (req, res, next) => {
+  const hotels = await Hotel.find({ isVerified: "true" })
+    .select("hotelName country district address averagePrice rating images")
+    .sort("-rating");
+
+  if (hotels) {
+    return res.status(200).json(hotels);
+  } else {
+    return next(new AppError("Hotels not found", 404));
+  }
+});

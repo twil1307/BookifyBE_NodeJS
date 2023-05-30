@@ -47,4 +47,11 @@ router.put(
   userController.changePassword
 );
 
+// add favorites
+router.put(
+  "/favorite/:hotelId",
+  jwtMiddleware,
+  userController.addOrRemoveFavorite
+);
+
 module.exports = router;
