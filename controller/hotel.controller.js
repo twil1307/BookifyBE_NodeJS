@@ -1,38 +1,26 @@
 const Hotel = require("../models/Hotel");
 const HotelType = require("../models/HotelType");
-const Amenity = require("../models/Amenity");
-const RoomType = require("../models/RoomType");
 require("dotenv").config();
 const mongoose = require("mongoose");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
+const {
+  getAmenitiesInsertNotDuplicate,
+  getListAmenityDuplicatedId,
+  addNewAmenityNotExisted,
+  addNewRoomType,
+  retrieveNewHotelImage,
+  getAveragePoint,
+} = require("../service/hotelService");
+const Review = require("../models/Review");
 
 module.exports.signNewHotel = async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    console.log(req.files);
     // Get image paths only for backgroundImage
-    let backgroundImage = "";
-    if (
-      req.files["backgroundImage"] &&
-      req.files["backgroundImage"].length > 0
-    ) {
-      backgroundImage = req.files["backgroundImage"][0].path
-        .split("public")[1]
-        .replaceAll("\\", "/");
-    }
-
-    const hotelImages =
-      req.files["hotelImage"]?.map(({ path }) => ({
-        imagePath: path.split("public")[1].replaceAll("\\", "/"),
-        imageType: 1,
-      })) || [];
-    const viewImages =
-      req.files["viewImage"]?.map(({ path }) => ({
-        imagePath: path.split("public")[1].replaceAll("\\", "/"),
-        imageType: 2,
-      })) || [];
+    const { backgroundImage, hotelImages, viewImages } =
+      retrieveNewHotelImage(req);
 
     // parse data
     const hotelSign = new Hotel(req.body);
@@ -129,59 +117,6 @@ module.exports.signNewHotel = async (req, res, next) => {
   }
 };
 
-const getAmenitiesInsertNotDuplicate = async (hotelAmenitySign) => {
-  // Find existing amenities with the same names
-  const existingAmenityNames = await Amenity.distinct("amenityName", {
-    amenityName: { $in: hotelAmenitySign.map((a) => a.amenityName) },
-  });
-
-  // Filter out new amenities that are duplicates
-  const filteredAmenities = await hotelAmenitySign.filter(
-    (a) => !existingAmenityNames.includes(a.amenityName)
-  );
-
-  return filteredAmenities;
-};
-
-const getListAmenityDuplicatedId = async (
-  hotelAmenitySign,
-  listAmenityDuplicated
-) => {
-  const newListName = listAmenityDuplicated.map(
-    (element) => element.amenityName
-  );
-
-  const duplicatedObjArr = hotelAmenitySign.filter((item) => {
-    return !newListName.includes(item.amenityName);
-  });
-
-  const duplicatedName = duplicatedObjArr.map((item) => item.amenityName);
-
-  const listId = await Amenity.find({
-    amenityName: { $in: duplicatedName },
-  }).select("_id");
-
-  return listId;
-};
-
-const addNewAmenityNotExisted = async (newAmenities, session) => {
-  const listId = await Amenity.insertMany(newAmenities, {
-    rawResult: true,
-    session,
-  });
-
-  return Object.values(listId.insertedIds);
-};
-
-const addNewRoomType = async (listRoomType, session) => {
-  const listId = await RoomType.insertMany(listRoomType, {
-    rawResult: true,
-    session,
-  });
-
-  return Object.values(listId.insertedIds);
-};
-
 module.exports.signNewHotelType = async (req, res) => {
   try {
     const hotelTypeSign = new HotelType(req.body);
@@ -210,9 +145,15 @@ module.exports.signNewHotelType = async (req, res) => {
 module.exports.getHotel = catchAsync(async (req, res, next) => {
   const hotel = await Hotel.findById(req.params.hotelId)
     .populate("hotelType")
-    .populate("userId", "-password -hotelBookmarked")
+    .populate("userId", "-password -hotelBookmarked -updatedAt")
     .populate("hotelAmenities")
-    .populate("roomType");
+    .populate("roomType")
+    .populate("reviews")
+    .populate("rating");
+
+  const data = await getAveragePoint(req.params.hotelId);
+
+  hotel.rating = data;
 
   if (hotel) {
     return res.status(200).json(hotel);
@@ -222,12 +163,39 @@ module.exports.getHotel = catchAsync(async (req, res, next) => {
 });
 
 module.exports.getAllHotels = catchAsync(async (req, res, next) => {
-  const hotels = await Hotel.find({ isVerified: "true" })
-    .select("hotelName country district address averagePrice rating images")
-    .sort("-rating");
+  // Get all hotels
+  const hotels = await Hotel.find({ isVerified: "true" }).select(
+    "hotelName country district address averagePrice rating images"
+  );
+
+  // Randomly select 3 images for each hotel
+  const hotelsWithRandomImages = hotels.map((hotel) => {
+    const randomImages = hotel.images
+      .sort(() => 0.5 - Math.random()) // sort images array by an random way
+      .slice(0, 3);
+    return { ...hotel._doc, images: randomImages };
+  });
 
   if (hotels) {
-    return res.status(200).json(hotels);
+    return res.status(200).json({ hotels: hotelsWithRandomImages });
+  } else {
+    return next(new AppError("Hotels not found", 404));
+  }
+});
+
+module.exports.reviewHotel = catchAsync(async (req, res, next) => {
+  // Get all hotels
+  const reviewObj = new Review(req.body);
+
+  const hotel = await Hotel.findById(req.params.hotelId);
+  if (hotel) {
+    await reviewObj.save();
+
+    hotel.reviews.push(reviewObj);
+
+    await hotel.save();
+
+    return res.status(200).json({ message: "Review successfully" });
   } else {
     return next(new AppError("Hotels not found", 404));
   }

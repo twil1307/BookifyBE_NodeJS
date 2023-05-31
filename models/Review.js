@@ -14,8 +14,13 @@ const ReviewSchema = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Hotel",
     },
+    content: {
+      type: String,
+      required: [true, "Content required"],
+    },
     sourceId: {
       type: Number,
+      default: 0,
     },
     communicationPoint: {
       type: Number,
@@ -33,80 +38,6 @@ const ReviewSchema = new Schema(
       type: Number,
       default: [true, "Value point required"],
     },
-    description: {
-      type: Date,
-      required: true,
-      default: Data.now,
-    },
-    country: {
-      type: String,
-      required: true,
-    },
-    district: {
-      type: String,
-      required: true,
-    },
-    city: {
-      type: String,
-      required: true,
-    },
-    address: {
-      type: String,
-      required: true,
-    },
-    closing: {
-      type: String,
-      required: true,
-    },
-    opening: {
-      type: String,
-      required: true,
-    },
-    checkin: {
-      type: String,
-      required: true,
-    },
-    checkout: {
-      type: String,
-      required: true,
-    },
-    averagePirce: {
-      type: Number,
-      required: true,
-    },
-    rating: {
-      type: Rating,
-      default: 0,
-    },
-    hotelAmenities: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Amenity",
-    },
-    images: {
-      type: {
-        imagesPath: { type: String, required: true },
-        imagesType: { type: Number, required: true },
-      },
-      required: false,
-    },
-    selfDescription: {
-      type: String,
-      required: false,
-    },
-    salt: {
-      type: String,
-      required: false,
-    },
-    bankingAccountNumber: {
-      type: String,
-      required: false,
-    },
-    dob: {
-      type: Date,
-      required: false,
-    },
-    // followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    // following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
   {
     timestamps: true,

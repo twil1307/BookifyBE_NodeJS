@@ -7,6 +7,7 @@ const {
   hotelImageUploaderLocal,
   formDataRetrieve,
 } = require("../service/uploadImg");
+const { isUserEverStayHere } = require("../middleware/reviewQualify");
 
 // Create new hotel with role admin
 router.post(
@@ -32,5 +33,13 @@ router.post(
 router.get("/:hotelId", hotelController.getHotel);
 
 router.get("/", hotelController.getAllHotels);
+
+router.post(
+  "/:hotelId/review",
+  formDataRetrieve.none(),
+  jwtMiddleware,
+  isUserEverStayHere,
+  hotelController.reviewHotel
+);
 
 module.exports = router;
