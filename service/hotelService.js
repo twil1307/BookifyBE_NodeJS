@@ -78,6 +78,30 @@ const retrieveNewHotelImage = (req) => {
   return { backgroundImage, hotelImages, viewImages };
 };
 
+const retrieveNewHotelImagePath = (req) => {
+  let backgroundImage = "";
+  if (req.files["backgroundImage"] && req.files["backgroundImage"].length > 0) {
+    backgroundImage = req.files["backgroundImage"][0].path.replaceAll(
+      "\\",
+      "/"
+    );
+  }
+
+  const hotelImages =
+    req.files["hotelImage"]?.map(({ path }) => path.replaceAll("\\", "/")) ||
+    [];
+  const viewImages =
+    req.files["viewImage"]?.map(({ path }) => path.replaceAll("\\", "/")) || [];
+
+  const imagePaths = [...hotelImages, ...viewImages]; // Combine the arrays
+
+  if (backgroundImage != null || bbackImage.length != 0) {
+    imagePaths.push(backgroundImage);
+  }
+
+  return imagePaths;
+};
+
 // Get average point for a specific hotel
 const getAveragePoint = async (hotelId) => {
   const listReviews = await Hotel.findById(hotelId)
@@ -133,5 +157,6 @@ module.exports = {
   addNewAmenityNotExisted,
   addNewRoomType,
   retrieveNewHotelImage,
+  retrieveNewHotelImagePath,
   getAveragePoint,
 };

@@ -38,6 +38,17 @@ const ReviewSchema = new Schema(
       type: Number,
       default: [true, "Value point required"],
     },
+    averagePoint: {
+      type: Number,
+      default: function () {
+        const sum =
+          this.communicationPoint +
+          this.accuracyPoint +
+          this.locationPoint +
+          this.valuePoint;
+        return Math.floor(sum / 4);
+      },
+    },
   },
   {
     timestamps: true,

@@ -2,7 +2,7 @@ var express = require("express");
 var router = express.Router();
 const hotelController = require("../controller/hotel.controller");
 const jwtMiddleware = require("../middleware/jwtMiddleware");
-const { hasRole } = require("../middleware/userAuthMiddleware");
+const { hasRole, isExactHost } = require("../middleware/userAuthMiddleware");
 const {
   hotelImageUploaderLocal,
   formDataRetrieve,
@@ -31,6 +31,19 @@ router.post(
 );
 
 router.get("/:hotelId", hotelController.getHotel);
+
+router.put(
+  "/:hotelId",
+  jwtMiddleware,
+  hasRole(2, 3),
+  isExactHost,
+  hotelImageUploaderLocal.fields([
+    { name: "backgroundImage", maxCount: 1 },
+    { name: "hotelImage", maxCount: 5 },
+    { name: "viewImage", maxCount: 5 },
+  ]),
+  hotelController.updateHotel
+);
 
 router.get("/", hotelController.getAllHotels);
 

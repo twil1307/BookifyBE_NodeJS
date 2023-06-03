@@ -1,22 +1,26 @@
 const Hotel = require("../models/Hotel");
 const HotelType = require("../models/HotelType");
+const Review = require("../models/Review");
+
 require("dotenv").config();
 const mongoose = require("mongoose");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
+const fileDelete = require("../utils/fileDelete");
 const {
   getAmenitiesInsertNotDuplicate,
   getListAmenityDuplicatedId,
   addNewAmenityNotExisted,
   addNewRoomType,
   retrieveNewHotelImage,
+  retrieveNewHotelImagePath,
   getAveragePoint,
 } = require("../service/hotelService");
-const Review = require("../models/Review");
 
 module.exports.signNewHotel = async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
+  const imagesPath = retrieveNewHotelImagePath(req);
   try {
     // Get image paths only for backgroundImage
     const { backgroundImage, hotelImages, viewImages } =
@@ -101,6 +105,8 @@ module.exports.signNewHotel = async (req, res, next) => {
     });
   } catch (error) {
     console.log(error);
+
+    fileDelete(imagesPath);
     await session.abortTransaction();
 
     session.endSession();
@@ -198,5 +204,79 @@ module.exports.reviewHotel = catchAsync(async (req, res, next) => {
     return res.status(200).json({ message: "Review successfully" });
   } else {
     return next(new AppError("Hotels not found", 404));
+  }
+});
+
+module.exports.getReviewsByAveragePoint = catchAsync(async (req, res, next) => {
+  // Get all reviews
+  const averagePoint = req.params.averagePoint;
+  const reviews = await Review.find({ averagePoint: averagePoint });
+
+  return res.status(200).json({
+    data: reviews,
+  });
+});
+
+module.exports.updateHotel = catchAsync(async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  const imagesPath = retrieveNewHotelImagePath(req);
+  try {
+    // Get image paths only for backgroundImage
+    const { backgroundImage, hotelImages, viewImages } =
+      retrieveNewHotelImage(req);
+
+    // parse data
+    const hotelSign = new Hotel(req.body);
+    // let roomTypeSign = new RoomType(req.body);
+    const {
+      roomPrice,
+      bedType,
+      bedNum,
+      bathroomType,
+      bathNum,
+      roomNum,
+      maxGuest,
+      bedroomNum,
+      isbathPrivate,
+      ...rest
+    } = req.body;
+
+    let roomTypeSign = {
+      roomPrice,
+      bedType,
+      bedNum,
+      bathroomType,
+      bathNum,
+      maxGuest,
+      bedroomNum,
+      isbathPrivate,
+    };
+
+    return res.status(200).json({
+      message: "Successfully",
+      data: {
+        hotelSign,
+        roomTypeSign,
+        imagesPath,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+
+    fileDelete(imagesPath);
+    await session.abortTransaction();
+
+    session.endSession();
+
+    if (error.code === 11000) {
+      return res.status(401).json({
+        message: "Hotel name is existed",
+      });
+    } else {
+      return res.status(401).json({
+        message: error.message,
+      });
+    }
   }
 });

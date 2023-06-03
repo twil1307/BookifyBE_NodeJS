@@ -210,3 +210,39 @@ module.exports.addOrRemoveFavorite = catchAsync(async (req, res, next) => {
     user: newUserHotelbookMarked,
   });
 });
+
+module.exports.enableHost = catchAsync(async (req, res, next) => {
+  const hotelIdBookmark = req.params.hotelId;
+
+  console.log(hotelIdBookmark);
+
+  const currentUser = await User.findById(req.user.id);
+
+  if (!currentUser.hotelBookmarked.includes(hotelIdBookmark)) {
+    currentUser.hotelBookmarked.push(hotelIdBookmark);
+  } else {
+    // remove hotelId when found existed in array
+    currentUser.hotelBookmarked.splice(
+      currentUser.hotelBookmarked.indexOf(hotelIdBookmark),
+      1
+    );
+  }
+
+  const newUserHotelbookMarked = await currentUser.save();
+
+  return res.json({
+    user: newUserHotelbookMarked,
+  });
+});
+
+module.exports.updateBankAccount = catchAsync(async (req, res, next) => {
+  const userId = req.params.userId;
+
+  await User.findByIdAndUpdate(userId, {
+    bankingAccountNumber: req.body.bankingAccountNumber,
+  });
+
+  return res.status(200).json({
+    message: "Update banking acocunt successfully",
+  });
+});
