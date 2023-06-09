@@ -4,7 +4,7 @@ const Booking = require("../models/Booking");
 const getNotAvailableDateRanges = async (hotelId) => {
   const rooms = await RoomType.find({ hotelId }).select("_id").lean();
 
-  const roomIds = rooms.map((obj) => obj._id.toString());
+  const roomIds = rooms.map((room) => room._id.toString());
 
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);

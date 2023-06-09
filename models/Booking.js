@@ -26,11 +26,11 @@ const bookingSchema = new Schema(
       required: [true, "Price required"],
     },
     checkin: {
-      type: String,
+      type: Date,
       required: [true, "Check in time required"],
     },
     checkout: {
-      type: String,
+      type: Date,
       required: [true, "Check out time required"],
     },
     aldult: {

@@ -30,12 +30,14 @@ var amenityRouter = require("./routes/amentity");
 var dashboardRouter = require("./routes/dashboard");
 var hotelRouter = require("./routes/hotel");
 var userRouter = require("./routes/user");
+var bookingRouter = require("./routes/booking");
 const AppError = require("./utils/appError");
 
 app.use("/amenity", amenityRouter);
 app.use("/dashboard", dashboardRouter);
 app.use("/hotel", hotelRouter);
 app.use("/user", userRouter);
+app.use("/booking", bookingRouter);
 
 // catch 404 and forward to error handler
 app.all("*", (req, res, next) => {

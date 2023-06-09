@@ -27,10 +27,10 @@ const roomTypeSchema = new Schema({
     type: Number,
     default: [true, "Bathroom number required"],
   },
-  roomNum: {
-    type: Number,
-    required: false,
-  },
+  // roomNum: {
+  //   type: Number,
+  //   required: false,
+  // },
   maxGuest: {
     type: Number,
     required: [true, "Max guest per room required"],
@@ -42,6 +42,10 @@ const roomTypeSchema = new Schema({
   isbathPrivate: {
     type: String,
     required: [true, "Is bathroom private"],
+  },
+  hotelId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Hotel",
   },
 
   // followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],

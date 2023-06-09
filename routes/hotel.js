@@ -22,6 +22,7 @@ router.post(
   hotelController.signNewHotel
 );
 
+// create hotel type
 router.post(
   "/type",
   formDataRetrieve.none(),
@@ -30,8 +31,10 @@ router.post(
   hotelController.signNewHotelType
 );
 
+// Get specific hotel
 router.get("/:hotelId", hotelController.getHotel);
 
+// update hotel
 router.put(
   "/:hotelId",
   jwtMiddleware,
@@ -45,8 +48,18 @@ router.put(
   hotelController.updateHotel
 );
 
+// get all hotel
 router.get("/", hotelController.getAllHotels);
 
+// delete hotel
+router.delete(
+  "/:hotelId",
+  jwtMiddleware,
+  hasRole(3),
+  hotelController.deleteHotel
+);
+
+// review hotel
 router.post(
   "/:hotelId/review",
   formDataRetrieve.none(),
