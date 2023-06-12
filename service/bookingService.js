@@ -26,11 +26,6 @@ const getNotAvailableDateRanges = async (hotelId) => {
   bookings.forEach((booking) => {
     const { roomId, checkin, checkout } = booking;
 
-    // If the room is not already in the roomBookings object, create an array to store the dates
-    // if (!roomBookings[roomId]) {
-    //   roomBookings[roomId] = [];
-    // }
-
     // Add the booking dates to the array
     const currentDate = new Date(checkin);
     while (currentDate <= checkout) {

@@ -38,6 +38,13 @@ router.put(
   userController.compareCurrentPassword
 );
 
+// verify jwt token
+router.post(
+  "/verifyjwt",
+  formDataRetrieve.none(),
+  userController.verifyJwtToken
+);
+
 // change password
 router.put(
   "/changePassword/:userId",

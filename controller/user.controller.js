@@ -3,6 +3,7 @@ const { hashPassword, comparePassword } = require("../service/passwordService");
 const {
   generateAccessToken,
   generateRefreshToken,
+  verifyToken,
   expireTokens,
 } = require("../service/jwtService");
 require("dotenv").config();
@@ -166,6 +167,23 @@ module.exports.compareCurrentPassword = catchAsync(async (req, res, next) => {
   }
 });
 
+module.exports.verifyJwtToken = catchAsync(async (req, res, next) => {
+  // Hash user password
+  const { accessToken } = req.cookies;
+
+  const token = accessToken.replace("Bearer ", "");
+
+  const result = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+
+  const userData = await User.findOne({ _id: result._id }).select(
+    "_id username name subName avatar"
+  );
+
+  return res.status(202).json({
+    user: userData,
+  });
+});
+
 module.exports.changePassword = catchAsync(async (req, res, next) => {
   const newPasword = req.body.newPassword;
   const userId = req.params.userId;
@@ -211,29 +229,7 @@ module.exports.addOrRemoveFavorite = catchAsync(async (req, res, next) => {
   });
 });
 
-module.exports.enableHost = catchAsync(async (req, res, next) => {
-  const hotelIdBookmark = req.params.hotelId;
-
-  console.log(hotelIdBookmark);
-
-  const currentUser = await User.findById(req.user.id);
-
-  if (!currentUser.hotelBookmarked.includes(hotelIdBookmark)) {
-    currentUser.hotelBookmarked.push(hotelIdBookmark);
-  } else {
-    // remove hotelId when found existed in array
-    currentUser.hotelBookmarked.splice(
-      currentUser.hotelBookmarked.indexOf(hotelIdBookmark),
-      1
-    );
-  }
-
-  const newUserHotelbookMarked = await currentUser.save();
-
-  return res.json({
-    user: newUserHotelbookMarked,
-  });
-});
+module.exports.enableHost = catchAsync(async (req, res, next) => {});
 
 module.exports.updateBankAccount = catchAsync(async (req, res, next) => {
   const userId = req.params.userId;

@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 require("dotenv").config();
 const cookie = require("cookie");
 
@@ -22,6 +23,33 @@ const generateRefreshToken = (userObj) => {
   return refreshToken;
 };
 
+const verifyToken = async (accessToken) => {
+  const token = accessToken.replace("Bearer ", "");
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      console.log(err);
+      return null;
+    }
+
+    const idFind = decoded._id;
+
+    User.findOne({ _id: idFind })
+      .select("-password")
+      .then((user) => {
+        if (user) {
+          console.log(user);
+          return user;
+        } else {
+          return null;
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  });
+};
+
 // Clear the cookie by setting an expired token value and past expiration date
 const expireTokens = [
   cookie.serialize("accessToken", "", {
@@ -40,4 +68,9 @@ const expireTokens = [
   }),
 ];
 
-module.exports = { generateAccessToken, generateRefreshToken, expireTokens };
+module.exports = {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyToken,
+  expireTokens,
+};
