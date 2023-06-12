@@ -8,6 +8,8 @@ const {
 const jwtMiddleware = require("../middleware/jwtMiddleware");
 const { isExactUser } = require("../middleware/userAuthMiddleware");
 
+router.get("/testIsSave", userController.testIsTokenSave);
+
 /* GET user */
 router.get("/:userId", formDataRetrieve.none(), userController.getUser);
 
@@ -23,6 +25,9 @@ router.put(
   userController.updateUser
 );
 
+// verify jwt token
+router.post("/verifyjwt", userController.verifyJwtToken);
+
 // login
 router.post("/login", formDataRetrieve.none(), userController.logIn);
 
@@ -36,13 +41,6 @@ router.put(
   isExactUser,
   formDataRetrieve.none(),
   userController.compareCurrentPassword
-);
-
-// verify jwt token
-router.post(
-  "/verifyjwt",
-  formDataRetrieve.none(),
-  userController.verifyJwtToken
 );
 
 // change password

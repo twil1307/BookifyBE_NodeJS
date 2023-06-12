@@ -184,6 +184,25 @@ module.exports.verifyJwtToken = catchAsync(async (req, res, next) => {
   });
 });
 
+module.exports.testIsTokenSave = catchAsync(async (req, res, next) => {
+  console.log("Here");
+
+  // Hash user password
+  return res
+    .status(200)
+    .cookie("accessToken", "Bearer iawdhdh1982dh1928hd9182dh1892hd1982hd", {
+      httpOnly: true,
+      secure: false,
+    })
+    .cookie("refreshToken", "Refresh iawdhdh1982dh1928hd9182dh1892hd1982hd", {
+      httpOnly: true,
+      secure: false,
+    })
+    .json({
+      message: "Retrieve new token successfully",
+    });
+});
+
 module.exports.changePassword = catchAsync(async (req, res, next) => {
   const newPasword = req.body.newPassword;
   const userId = req.params.userId;
