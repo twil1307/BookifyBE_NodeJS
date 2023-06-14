@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const fileDelete = require("../utils/fileDelete");
-const { getNotAvailableDateRanges } = require("../service/bookingService");
+const { getUnavailableDateRanges } = require("../service/bookingService");
 const {
   getAmenitiesInsertNotDuplicate,
   getListAmenityDuplicatedId,
@@ -144,7 +144,7 @@ module.exports.getHotel = catchAsync(async (req, res, next) => {
 
   hotel.rating = data;
 
-  const bookedDate = await getNotAvailableDateRanges(req.params.hotelId);
+  const bookedDate = await getUnavailableDateRanges(req.params.hotelId);
 
   if (hotel) {
     return res.status(200).json({ hotel, fullyBookedDates: bookedDate });

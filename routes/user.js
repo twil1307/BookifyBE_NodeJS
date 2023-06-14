@@ -8,7 +8,10 @@ const {
 const jwtMiddleware = require("../middleware/jwtMiddleware");
 const { isExactUser } = require("../middleware/userAuthMiddleware");
 
-router.get("/testIsSave", userController.testIsTokenSave);
+router.post("/testIsSave", userController.testIsTokenSave);
+
+// Get user money ammount
+router.get("/amount", jwtMiddleware, userController.getUserRemainingAmount);
 
 /* GET user */
 router.get("/:userId", formDataRetrieve.none(), userController.getUser);

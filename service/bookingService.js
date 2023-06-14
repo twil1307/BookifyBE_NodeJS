@@ -1,7 +1,7 @@
 const RoomType = require("../models/RoomType");
 const Booking = require("../models/Booking");
 
-const getNotAvailableDateRanges = async (hotelId) => {
+const getUnavailableDateRanges = async (hotelId) => {
   const rooms = await RoomType.find({ hotelId }).select("_id").lean();
 
   const roomIds = rooms.map((room) => room._id.toString());
@@ -45,4 +45,4 @@ const getNotAvailableDateRanges = async (hotelId) => {
   return bookedDate;
 };
 
-module.exports = { getNotAvailableDateRanges };
+module.exports = { getUnavailableDateRanges };

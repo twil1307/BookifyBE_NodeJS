@@ -190,11 +190,7 @@ module.exports.testIsTokenSave = catchAsync(async (req, res, next) => {
   // Hash user password
   return res
     .status(200)
-    .cookie("accessToken", "Bearer iawdhdh1982dh1928hd9182dh1892hd1982hd", {
-      httpOnly: true,
-      secure: false,
-    })
-    .cookie("refreshToken", "Refresh iawdhdh1982dh1928hd9182dh1892hd1982hd", {
+    .cookie("refreshToken33", "Refresh iawdhdh1982dh1928hd9182dh1892hd1982hd", {
       httpOnly: true,
       secure: false,
     })
@@ -259,5 +255,14 @@ module.exports.updateBankAccount = catchAsync(async (req, res, next) => {
 
   return res.status(200).json({
     message: "Update banking acocunt successfully",
+  });
+});
+
+module.exports.getUserRemainingAmount = catchAsync(async (req, res, next) => {
+  console.log(req.user);
+
+  return res.status(200).json({
+    message: "Get",
+    user: req.user,
   });
 });
