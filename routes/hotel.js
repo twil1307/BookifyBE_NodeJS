@@ -8,12 +8,13 @@ const {
   formDataRetrieve,
 } = require("../service/uploadImg");
 const { isUserEverStayHere } = require("../middleware/reviewQualify");
+const Roles = require("../enum/Role");
 
 // Create new hotel with role admin
 router.post(
   "/",
   jwtMiddleware,
-  hasRole(3),
+  hasRole(Roles.ADMIN),
   hotelImageUploaderLocal.fields([
     { name: "backgroundImage", maxCount: 1 },
     { name: "hotelImage", maxCount: 5 },
@@ -27,7 +28,7 @@ router.post(
   "/type",
   formDataRetrieve.none(),
   jwtMiddleware,
-  hasRole(3),
+  hasRole(Roles.ADMIN),
   hotelController.signNewHotelType
 );
 
@@ -38,7 +39,7 @@ router.get("/:hotelId", hotelController.getHotel);
 router.put(
   "/:hotelId",
   jwtMiddleware,
-  hasRole(2, 3),
+  hasRole(Roles.ADMIN, Roles.HOST),
   isExactHost,
   hotelImageUploaderLocal.fields([
     { name: "backgroundImage", maxCount: 1 },
@@ -55,7 +56,7 @@ router.get("/", hotelController.getAllHotels);
 router.delete(
   "/:hotelId",
   jwtMiddleware,
-  hasRole(3),
+  hasRole(Roles.ADMIN),
   hotelController.deleteHotel
 );
 

@@ -31,6 +31,7 @@ var dashboardRouter = require("./routes/dashboard");
 var hotelRouter = require("./routes/hotel");
 var userRouter = require("./routes/user");
 var bookingRouter = require("./routes/booking");
+var dashboardRouter = require("./routes/dashboard");
 const AppError = require("./utils/appError");
 
 app.use("/amenity", amenityRouter);
@@ -38,6 +39,7 @@ app.use("/dashboard", dashboardRouter);
 app.use("/hotel", hotelRouter);
 app.use("/user", userRouter);
 app.use("/booking", bookingRouter);
+app.use("/dashboard", dashboardRouter);
 
 // catch 404 and forward to error handler
 app.all("*", (req, res, next) => {

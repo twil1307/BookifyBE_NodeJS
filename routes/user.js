@@ -8,10 +8,22 @@ const {
 const jwtMiddleware = require("../middleware/jwtMiddleware");
 const { isExactUser } = require("../middleware/userAuthMiddleware");
 
-router.post("/testIsSave", userController.testIsTokenSave);
+// update user banking account
+router.put(
+  "/bankingAccount",
+  jwtMiddleware,
+  formDataRetrieve.none(),
+  userController.updateUserBankingAccount
+);
 
 // Get user money ammount
 router.get("/amount", jwtMiddleware, userController.getUserRemainingAmount);
+
+router.get(
+  "/bookingHistory",
+  jwtMiddleware,
+  userController.getUserBookingHistory
+);
 
 /* GET user */
 router.get("/:userId", formDataRetrieve.none(), userController.getUser);

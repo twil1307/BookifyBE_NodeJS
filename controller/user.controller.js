@@ -3,13 +3,14 @@ const { hashPassword, comparePassword } = require("../service/passwordService");
 const {
   generateAccessToken,
   generateRefreshToken,
-  verifyToken,
   expireTokens,
 } = require("../service/jwtService");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
+const BankingAccount = require("../models/BankingAccount");
+const Booking = require("../models/Booking");
 
 module.exports.getUser = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.params.userId).select("-password");
@@ -55,6 +56,24 @@ module.exports.updateUser = catchAsync(async (req, res, next) => {
   const userId = req.params.userId;
 
   const newUser = await User.findByIdAndUpdate(userId, userObj, { new: true });
+  return res.status(200).json({
+    user: newUser,
+  });
+});
+
+module.exports.updateUserBankingAccount = catchAsync(async (req, res, next) => {
+  console.log(req.body.bankingAccountNumber);
+
+  const bankingAccount = new BankingAccount(req.body);
+
+  await bankingAccount.save();
+
+  const newUser = await User.findByIdAndUpdate(
+    req.user._id,
+    { $set: { bankingAccountNumber: bankingAccount._id } },
+    { new: true }
+  );
+
   return res.status(200).json({
     user: newUser,
   });
@@ -259,10 +278,24 @@ module.exports.updateBankAccount = catchAsync(async (req, res, next) => {
 });
 
 module.exports.getUserRemainingAmount = catchAsync(async (req, res, next) => {
-  console.log(req.user);
+  const bankingAccountId = await User.findById(req.user._id)
+    .populate("bankingAccountNumber", "amount")
+    .select("bankingAccountNumber -_id");
 
   return res.status(200).json({
-    message: "Get",
-    user: req.user,
+    amount: bankingAccountId.bankingAccountNumber.amount,
+  });
+});
+
+module.exports.getUserBookingHistory = catchAsync(async (req, res, next) => {
+  const bookingHistory = await Booking.find({})
+    .populate([
+      { path: "hotelId", select: "hotelId hotelName" },
+      // { path: "roomId", select: "bedType" },
+    ])
+    .select("-userId -updatedAt")
+    .sort({ createdAt: 1 });
+  return res.status(200).json({
+    bookingHistory,
   });
 });

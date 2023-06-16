@@ -91,7 +91,10 @@ const userSchema = new Schema(
       type: [mongoose.Schema.Types.ObjectId],
       ref: "Hotel",
     },
-
+    bankingAccountNumber: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "BankingAccount",
+    },
     // followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     // following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
