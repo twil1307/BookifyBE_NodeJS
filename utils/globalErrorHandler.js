@@ -2,6 +2,7 @@ const AppError = require("../utils/appError");
 
 module.exports = (err, req, res, next) => {
   console.log(err);
+  console.log(err.name);
 
   let error = { ...err };
 
@@ -13,7 +14,7 @@ module.exports = (err, req, res, next) => {
   if (err.name === "JsonWebTokenError") error = handleJWTError();
   if (err.name === "TokenExpiredError") error = handleJWTExpiredError();
 
-  return res.status(err.statusCode || 500).json({ message: error.message });
+  return res.status(error.statusCode || 500).json({ message: error.message });
 };
 
 // handle schema validation
@@ -21,8 +22,6 @@ const handleValidationErrorDB = (err) => {
   const errors = Object.values(err.errors).map((el) => el.message);
 
   const message = `Invalid input data. ${errors.join(". ")}`;
-
-  console.log(message);
 
   return new AppError(message, 400);
 };

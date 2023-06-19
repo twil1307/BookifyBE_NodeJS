@@ -1,57 +1,42 @@
 const Hotel = require("../models/Hotel");
 const HotelType = require("../models/HotelType");
-const Amenity = require("../models/Amenity");
-const RoomType = require("../models/RoomType");
+const Review = require("../models/Review");
+
 require("dotenv").config();
 const mongoose = require("mongoose");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
+const fileDelete = require("../utils/fileDelete");
+const { getUnavailableDateRanges } = require("../service/bookingService");
+const {
+  getAmenitiesInsertNotDuplicate,
+  getListAmenityDuplicatedId,
+  addNewAmenityNotExisted,
+  addNewRoomType,
+  retrieveNewHotelImage,
+  retrieveNewHotelImagePath,
+  getAveragePoint,
+} = require("../service/hotelService");
+const RoomType = require("../models/RoomType");
 
 module.exports.signNewHotel = async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
+  const imagesPath = retrieveNewHotelImagePath(req);
   try {
-    // get image paths only
-    const backgroundImage = req.files["backgroundImage"][0].path
-      .split("public")[1]
-      .replaceAll("\\", "/");
-    const hotelImages = req.files["hotelImage"].map(({ path }) => ({
-      imagePath: path.split("public")[1].replaceAll("\\", "/"),
-      imageType: 1,
-    }));
-    const viewImages = req.files["viewImage"].map(({ path }) => ({
-      imagePath: path.split("public")[1].replaceAll("\\", "/"),
-      imageType: 2,
-    }));
+    // Get image paths only for backgroundImage
+    const { backgroundImage, hotelImages, viewImages } =
+      retrieveNewHotelImage(req);
 
     // parse data
     const hotelSign = new Hotel(req.body);
     // let roomTypeSign = new RoomType(req.body);
-    const {
-      roomPrice,
-      bedType,
-      bedNum,
-      bathroomType,
-      bathNum,
-      roomNum,
-      maxGuest,
-      bedroomNum,
-      isbathPrivate,
-      ...rest
-    } = req.body;
+    const { roomNum, ...rest } = req.body;
 
     let roomTypeSign = {
-      roomPrice,
-      bedType,
-      bedNum,
-      bathroomType,
-      bathNum,
-      maxGuest,
-      bedroomNum,
-      isbathPrivate,
+      hotelId: hotelSign._id,
+      ...rest,
     };
-
-    console.log(roomTypeSign);
 
     const hotelAmenitySign = JSON.parse(req.body.amenities);
 
@@ -87,7 +72,7 @@ module.exports.signNewHotel = async (req, res, next) => {
 
     const listRoomId = await addNewRoomType(roomsData, session);
 
-    hotelSign.roomType = [...listRoomId];
+    hotelSign.roomType = [...listRoomId.flat()];
 
     // Saving new hotel
     const hotelSignComplete = await hotelSign.save();
@@ -103,6 +88,8 @@ module.exports.signNewHotel = async (req, res, next) => {
     });
   } catch (error) {
     console.log(error);
+
+    fileDelete(imagesPath);
     await session.abortTransaction();
 
     session.endSession();
@@ -117,59 +104,6 @@ module.exports.signNewHotel = async (req, res, next) => {
       });
     }
   }
-};
-
-const getAmenitiesInsertNotDuplicate = async (hotelAmenitySign) => {
-  // Find existing amenities with the same names
-  const existingAmenityNames = await Amenity.distinct("amenityName", {
-    amenityName: { $in: hotelAmenitySign.map((a) => a.amenityName) },
-  });
-
-  // Filter out new amenities that are duplicates
-  const filteredAmenities = await hotelAmenitySign.filter(
-    (a) => !existingAmenityNames.includes(a.amenityName)
-  );
-
-  return filteredAmenities;
-};
-
-const getListAmenityDuplicatedId = async (
-  hotelAmenitySign,
-  listAmenityDuplicated
-) => {
-  const newListName = listAmenityDuplicated.map(
-    (element) => element.amenityName
-  );
-
-  const duplicatedObjArr = hotelAmenitySign.filter((item) => {
-    return !newListName.includes(item.amenityName);
-  });
-
-  const duplicatedName = duplicatedObjArr.map((item) => item.amenityName);
-
-  const listId = await Amenity.find({
-    amenityName: { $in: duplicatedName },
-  }).select("_id");
-
-  return listId;
-};
-
-const addNewAmenityNotExisted = async (newAmenities, session) => {
-  const listId = await Amenity.insertMany(newAmenities, {
-    rawResult: true,
-    session,
-  });
-
-  return Object.values(listId.insertedIds);
-};
-
-const addNewRoomType = async (listRoomType, session) => {
-  const listId = await RoomType.insertMany(listRoomType, {
-    rawResult: true,
-    session,
-  });
-
-  return Object.values(listId.insertedIds);
 };
 
 module.exports.signNewHotelType = async (req, res) => {
@@ -196,3 +130,163 @@ module.exports.signNewHotelType = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+module.exports.getHotel = catchAsync(async (req, res, next) => {
+  const hotel = await Hotel.findById(req.params.hotelId)
+    .populate("hotelType")
+    .populate("userId", "-password -hotelBookmarked -updatedAt -dob")
+    .populate("hotelAmenities")
+    .populate("roomType")
+    .populate("reviews")
+    .populate("rating");
+
+  const data = await getAveragePoint(req.params.hotelId);
+
+  hotel.rating = data;
+
+  const bookedDate = await getUnavailableDateRanges(req.params.hotelId);
+
+  if (hotel) {
+    return res.status(200).json({ hotel, fullyBookedDates: bookedDate });
+  } else {
+    return next(new AppError("Hotel not found", 404));
+  }
+});
+
+Date.prototype.addDays = function (days) {
+  var date = new Date(this.valueOf());
+  date.setDate(date.getDate() + days);
+  return date;
+};
+
+module.exports.getAllHotels = catchAsync(async (req, res, next) => {
+  // Get all hotels
+  const hotels = await Hotel.find({ isVerified: "true" }).select(
+    "hotelName country district address averagePrice rating images"
+  );
+
+  // Randomly select 3 images for each hotel
+  const hotelsWithRandomImages = hotels.map((hotel) => {
+    const randomImages = hotel.images
+      .sort(() => 0.5 - Math.random()) // sort images array by an random way
+      .slice(0, 3);
+    return { ...hotel._doc, images: randomImages };
+  });
+
+  if (hotels) {
+    return res.status(200).json({ hotels: hotelsWithRandomImages });
+  } else {
+    return next(new AppError("Hotels not found", 404));
+  }
+});
+
+module.exports.reviewHotel = catchAsync(async (req, res, next) => {
+  // Get all hotels
+  const reviewObj = new Review(req.body);
+
+  const hotel = await Hotel.findById(req.params.hotelId);
+  if (hotel) {
+    await reviewObj.save();
+
+    hotel.reviews.push(reviewObj);
+
+    await hotel.save();
+
+    return res.status(200).json({ message: "Review successfully" });
+  } else {
+    return next(new AppError("Hotels not found", 404));
+  }
+});
+
+module.exports.getReviewsByAveragePoint = catchAsync(async (req, res, next) => {
+  // Get all reviews
+  const averagePoint = req.params.averagePoint;
+  const reviews = await Review.find({ averagePoint: averagePoint });
+
+  return res.status(200).json({
+    data: reviews,
+  });
+});
+
+module.exports.deleteHotel = catchAsync(async (req, res, next) => {
+  const hotelId = req.params.hotelId;
+
+  const hotelDelete = await Hotel.findByIdAndDelete(hotelId);
+
+  const listImage = hotelDelete.images.map(
+    (image) => "public/" + image.imagePath
+  );
+
+  console.log(listImage);
+
+  fileDelete(listImage);
+
+  // Get all reviews
+  const roomsDelete = await RoomType.deleteMany({
+    _id: { $in: hotelDelete.roomType },
+  });
+
+  const reviewsDelete = await Review.deleteMany({
+    _id: { $in: hotelDelete.reviews },
+  });
+
+  return res.status(200).json({
+    message: "Delete successfully completed",
+    data: { roomsDelete, hotelDelete, reviewsDelete },
+  });
+});
+
+module.exports.updateHotel = catchAsync(async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  const imagesPath = retrieveNewHotelImagePath(req);
+  try {
+    const hotelIdUpdate = req.params.hotelId;
+
+    // Get image paths only for backgroundImage
+
+    // Khi gui 1 list array image moi ve server (bao gom nhung cai moi va cu) xu li the nao
+    const { backgroundImage, hotelImages, viewImages } =
+      retrieveNewHotelImage(req);
+
+    // parse data
+    // const hotelUpdate = new Hotel(req.body);
+    const { amenities, roomType, hotelImage, viewImage, ...basicHotelInfo } =
+      req.body;
+
+    req.body.amenities = JSON.parse(req.body.amenities);
+
+    // update basic info
+    const newHotelInfo = await Hotel.findByIdAndUpdate(
+      hotelIdUpdate,
+      basicHotelInfo,
+      { new: true }
+    );
+
+    // update hotel amenities
+
+    return res.status(200).json({
+      message: "Successfully",
+      data: {
+        newHotelInfo,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+
+    fileDelete(imagesPath);
+    await session.abortTransaction();
+
+    session.endSession();
+
+    if (error.code === 11000) {
+      return res.status(401).json({
+        message: "Hotel name is existed",
+      });
+    } else {
+      return res.status(401).json({
+        message: error.message,
+      });
+    }
+  }
+});

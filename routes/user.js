@@ -8,6 +8,23 @@ const {
 const jwtMiddleware = require("../middleware/jwtMiddleware");
 const { isExactUser } = require("../middleware/userAuthMiddleware");
 
+// update user banking account
+router.put(
+  "/bankingAccount",
+  jwtMiddleware,
+  formDataRetrieve.none(),
+  userController.updateUserBankingAccount
+);
+
+// Get user money ammount
+router.get("/amount", jwtMiddleware, userController.getUserRemainingAmount);
+
+router.get(
+  "/bookingHistory",
+  jwtMiddleware,
+  userController.getUserBookingHistory
+);
+
 /* GET user */
 router.get("/:userId", formDataRetrieve.none(), userController.getUser);
 
@@ -22,6 +39,9 @@ router.put(
   userImageUploaderLocal.single("avatar"),
   userController.updateUser
 );
+
+// verify jwt token
+router.post("/verifyjwt", userController.verifyJwtToken);
 
 // login
 router.post("/login", formDataRetrieve.none(), userController.logIn);
@@ -45,6 +65,13 @@ router.put(
   isExactUser,
   formDataRetrieve.none(),
   userController.changePassword
+);
+
+// add favorites
+router.put(
+  "/favorite/:hotelId",
+  jwtMiddleware,
+  userController.addOrRemoveFavorite
 );
 
 module.exports = router;

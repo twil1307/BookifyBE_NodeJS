@@ -9,6 +9,8 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
+const BankingAccount = require("../models/BankingAccount");
+const Booking = require("../models/Booking");
 
 module.exports.getUser = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.params.userId).select("-password");
@@ -54,6 +56,24 @@ module.exports.updateUser = catchAsync(async (req, res, next) => {
   const userId = req.params.userId;
 
   const newUser = await User.findByIdAndUpdate(userId, userObj, { new: true });
+  return res.status(200).json({
+    user: newUser,
+  });
+});
+
+module.exports.updateUserBankingAccount = catchAsync(async (req, res, next) => {
+  console.log(req.body.bankingAccountNumber);
+
+  const bankingAccount = new BankingAccount(req.body);
+
+  await bankingAccount.save();
+
+  const newUser = await User.findByIdAndUpdate(
+    req.user._id,
+    { $set: { bankingAccountNumber: bankingAccount._id } },
+    { new: true }
+  );
+
   return res.status(200).json({
     user: newUser,
   });
@@ -166,6 +186,38 @@ module.exports.compareCurrentPassword = catchAsync(async (req, res, next) => {
   }
 });
 
+module.exports.verifyJwtToken = catchAsync(async (req, res, next) => {
+  // Hash user password
+  const { accessToken } = req.cookies;
+
+  const token = accessToken.replace("Bearer ", "");
+
+  const result = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+
+  const userData = await User.findOne({ _id: result._id }).select(
+    "_id username name subName avatar"
+  );
+
+  return res.status(202).json({
+    user: userData,
+  });
+});
+
+module.exports.testIsTokenSave = catchAsync(async (req, res, next) => {
+  console.log("Here");
+
+  // Hash user password
+  return res
+    .status(200)
+    .cookie("refreshToken33", "Refresh iawdhdh1982dh1928hd9182dh1892hd1982hd", {
+      httpOnly: true,
+      secure: false,
+    })
+    .json({
+      message: "Retrieve new token successfully",
+    });
+});
+
 module.exports.changePassword = catchAsync(async (req, res, next) => {
   const newPasword = req.body.newPassword;
   const userId = req.params.userId;
@@ -185,4 +237,65 @@ module.exports.changePassword = catchAsync(async (req, res, next) => {
   } else {
     return next(new AppError("Passwords updated failed", 500));
   }
+});
+
+module.exports.addOrRemoveFavorite = catchAsync(async (req, res, next) => {
+  const hotelIdBookmark = req.params.hotelId;
+
+  console.log(hotelIdBookmark);
+
+  const currentUser = await User.findById(req.user.id);
+
+  if (!currentUser.hotelBookmarked.includes(hotelIdBookmark)) {
+    currentUser.hotelBookmarked.push(hotelIdBookmark);
+  } else {
+    // remove hotelId when found existed in array
+    currentUser.hotelBookmarked.splice(
+      currentUser.hotelBookmarked.indexOf(hotelIdBookmark),
+      1
+    );
+  }
+
+  const newUserHotelbookMarked = await currentUser.save();
+
+  return res.json({
+    user: newUserHotelbookMarked,
+  });
+});
+
+module.exports.enableHost = catchAsync(async (req, res, next) => {});
+
+module.exports.updateBankAccount = catchAsync(async (req, res, next) => {
+  const userId = req.params.userId;
+
+  await User.findByIdAndUpdate(userId, {
+    bankingAccountNumber: req.body.bankingAccountNumber,
+  });
+
+  return res.status(200).json({
+    message: "Update banking acocunt successfully",
+  });
+});
+
+module.exports.getUserRemainingAmount = catchAsync(async (req, res, next) => {
+  const bankingAccountId = await User.findById(req.user._id)
+    .populate("bankingAccountNumber", "amount")
+    .select("bankingAccountNumber -_id");
+
+  return res.status(200).json({
+    amount: bankingAccountId.bankingAccountNumber.amount,
+  });
+});
+
+module.exports.getUserBookingHistory = catchAsync(async (req, res, next) => {
+  const bookingHistory = await Booking.find({})
+    .populate([
+      { path: "hotelId", select: "hotelId hotelName" },
+      // { path: "roomId", select: "bedType" },
+    ])
+    .select("-userId -updatedAt")
+    .sort({ createdAt: 1 });
+  return res.status(200).json({
+    bookingHistory,
+  });
 });
