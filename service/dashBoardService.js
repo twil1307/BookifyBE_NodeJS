@@ -230,11 +230,16 @@ const getNumberOfBookingByMonth = async (req, res, next) => {
       },
     });
 
+    const { previousMonth, previousYear } = getPreviousMonthAndPreviousYear(
+      month,
+      currentYear
+    );
+
     // Get booking data previous month
     const numberOfBookingPreviousMonth = await Booking.find({
       $and: [
-        { $expr: { $eq: [{ $month: "$createdAt" }, month - 1] } },
-        { $expr: { $eq: [{ $year: "$createdAt" }, currentYear] } },
+        { $expr: { $eq: [{ $month: "$createdAt" }, previousMonth] } },
+        { $expr: { $eq: [{ $year: "$createdAt" }, previousYear] } },
       ],
     });
 
@@ -248,6 +253,9 @@ const getNumberOfBookingByMonth = async (req, res, next) => {
 
     // Get total booking of each date booking
     const dailyBooking = getHotelBookingByDays(numberOfBookingThisMonth);
+    const trendingBooking = getBookingTrending(numberOfBookingThisMonth);
+
+    console.log(trendingBooking);
 
     return {
       numberOfBooking: {
@@ -255,6 +263,7 @@ const getNumberOfBookingByMonth = async (req, res, next) => {
         fluctuations: fluctuations,
       },
       dailyBooking,
+      trendingBooking,
       numberOfPayment: {
         total: numberOfBookingThisMonth.length,
         fluctuations: fluctuations,
@@ -266,21 +275,33 @@ const getNumberOfBookingByMonth = async (req, res, next) => {
   }
 };
 
-const getBookingTrending = (bookingData) => {
-  const dailyViews = bookingData.reduce((accumulator, item) => {
-    const date = new Date(item.createdAt);
-    const day = date.getDate();
+const getPreviousMonthAndPreviousYear = (month, currentYear) => {
+  // Get booking data for the previous month
+  let previousMonth = month - 1;
+  let previousYear = currentYear;
+  if (previousMonth === 0) {
+    // Adjust for January, set previous month to December of the previous year
+    previousMonth = 12;
+    previousYear = currentYear - 1;
+  }
 
-    if (!accumulator[day]) {
-      accumulator[day] = 0;
+  return { previousMonth, previousYear };
+};
+
+const getBookingTrending = (bookingData) => {
+  const trendingBooking = bookingData.reduce((accumulator, item) => {
+    const hotelType = item.hotelId.hotelType.hotelType;
+
+    if (!accumulator[hotelType]) {
+      accumulator[hotelType] = 0;
     }
 
-    accumulator[day] += 1;
+    accumulator[hotelType] += 1;
 
     return accumulator;
   }, {});
 
-  return dailyViews;
+  return trendingBooking;
 };
 
 const getNumberOfVisitorByMonth = async (req, res, next) => {
@@ -299,11 +320,16 @@ const getNumberOfVisitorByMonth = async (req, res, next) => {
       ],
     });
 
+    const { previousMonth, previousYear } = getPreviousMonthAndPreviousYear(
+      month,
+      currentYear
+    );
+
     // Get number of visitors previous month
     const numberOfVisitorsPreviousMonth = await PageView.countDocuments({
       $and: [
-        { $expr: { $eq: [{ $month: "$createdAt" }, month - 1] } },
-        { $expr: { $eq: [{ $year: "$createdAt" }, currentYear] } },
+        { $expr: { $eq: [{ $month: "$createdAt" }, previousMonth] } },
+        { $expr: { $eq: [{ $year: "$createdAt" }, previousYear] } },
       ],
     });
 
@@ -345,11 +371,16 @@ const getNumberOfRatingByMonth = async (req, res, next) => {
       ],
     });
 
+    const { previousMonth, previousYear } = getPreviousMonthAndPreviousYear(
+      month,
+      currentYear
+    );
+
     // Get number of visitors previous month
     const numberOfReviewPreviousMonth = await Review.countDocuments({
       $and: [
-        { $expr: { $eq: [{ $month: "$createdAt" }, month - 1] } },
-        { $expr: { $eq: [{ $year: "$createdAt" }, currentYear] } },
+        { $expr: { $eq: [{ $month: "$createdAt" }, previousMonth] } },
+        { $expr: { $eq: [{ $year: "$createdAt" }, previousYear] } },
       ],
     });
 
@@ -389,11 +420,16 @@ const getNumberOfUserRegisteredByMonth = async (req, res, next) => {
       ],
     });
 
+    const { previousMonth, previousYear } = getPreviousMonthAndPreviousYear(
+      month,
+      currentYear
+    );
+
     // Get number of visitors previous month
     const numberOfNewUserPreviousMonth = await User.countDocuments({
       $and: [
-        { $expr: { $eq: [{ $month: "$createdAt" }, month - 1] } },
-        { $expr: { $eq: [{ $year: "$createdAt" }, currentYear] } },
+        { $expr: { $eq: [{ $month: "$createdAt" }, previousMonth] } },
+        { $expr: { $eq: [{ $year: "$createdAt" }, previousYear] } },
       ],
     });
 

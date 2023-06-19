@@ -197,7 +197,7 @@ module.exports.getHotelDetailsInfo = catchAsync(async (req, res, next) => {
 module.exports.getDashBoardDetailsInfo = catchAsync(async (req, res, next) => {
   // booking data, payment data
   try {
-    const { numberOfBooking, dailyBooking, numberOfPayment } =
+    const { numberOfBooking, dailyBooking, trendingBooking, numberOfPayment } =
       await getNumberOfBookingByMonth(req, res, next);
 
     console.log(numberOfBooking);
@@ -226,6 +226,7 @@ module.exports.getDashBoardDetailsInfo = catchAsync(async (req, res, next) => {
       },
       chartData: {
         dailyBooking,
+        trendingBooking,
       },
     });
   } catch (error) {

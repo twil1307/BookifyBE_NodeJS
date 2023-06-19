@@ -1,5 +1,5 @@
 const Booking = require("../models/Booking");
-const Room = require("../models/RoomType");
+const Room = require("../models/Room");
 const BankingAccount = require("../models/BankingAccount");
 const catchAsync = require("../utils/catchAsync");
 const mongoose = require("mongoose");
@@ -24,14 +24,15 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
     const hotelRoomIdsAndPrice = await Room.find({
       hotelId: bookingRequest.hotelId,
     })
-      .select("_id roomPrice")
+      .select("_id roomTypeId")
+      .populate({ path: "roomTypeId", select: "roomPrice" })
       .sort({ _id: 1 });
 
     // Filter out _id only
     const hotelRoomIds = hotelRoomIdsAndPrice.map((obj) => obj._id);
 
     // Get out price only
-    const roomPrice = hotelRoomIdsAndPrice[0].roomPrice;
+    const roomPrice = hotelRoomIdsAndPrice[0].roomTypeId.roomPrice;
 
     bookingRequest.price = roomPrice;
 

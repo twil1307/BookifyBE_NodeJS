@@ -1,5 +1,6 @@
 const Amenity = require("../models/Amenity");
 const RoomType = require("../models/RoomType");
+const Room = require("../models/Room");
 const Hotel = require("../models/Hotel");
 require("dotenv").config();
 
@@ -47,13 +48,23 @@ const addNewAmenityNotExisted = async (newAmenities, session) => {
   return Object.values(listId.insertedIds);
 };
 
-const addNewRoomType = async (listRoomType, session) => {
-  const listId = await RoomType.insertMany(listRoomType, {
+const addNewRooms = async (newRoomTypeId, hotelId, roomNum, session) => {
+  const roomObjData = {
+    hotelId: hotelId,
+    roomTypeId: newRoomTypeId,
+  };
+
+  // add new roomtype
+  const roomsData = Array.from({ length: roomNum }, () => {
+    return roomObjData;
+  });
+
+  const listRoomId = await Room.insertMany(roomsData, {
     rawResult: true,
     session,
   });
 
-  return Object.values(listId.insertedIds);
+  return Object.values(listRoomId.insertedIds);
 };
 
 const retrieveNewHotelImage = (req) => {
@@ -157,7 +168,7 @@ module.exports = {
   getAmenitiesInsertNotDuplicate,
   getListAmenityDuplicatedId,
   addNewAmenityNotExisted,
-  addNewRoomType,
+  addNewRooms,
   retrieveNewHotelImage,
   retrieveNewHotelImagePath,
   getAveragePoint,

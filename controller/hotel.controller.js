@@ -12,7 +12,7 @@ const {
   getAmenitiesInsertNotDuplicate,
   getListAmenityDuplicatedId,
   addNewAmenityNotExisted,
-  addNewRoomType,
+  addNewRooms,
   retrieveNewHotelImage,
   retrieveNewHotelImagePath,
   getAveragePoint,
@@ -65,14 +65,20 @@ module.exports.signNewHotel = async (req, res, next) => {
     // Pass existed amenities ids and new amenities ids
     hotelSign.hotelAmenities = [...listExistedAmenitiesAdd, ...newAmenitiesId];
 
-    // add new roomtype
-    const roomsData = Array.from({ length: roomNum }, () => {
-      return roomTypeSign;
-    });
+    // add new room type
+    const newRoomType = new RoomType(roomTypeSign);
+    await newRoomType.save();
 
-    const listRoomId = await addNewRoomType(roomsData, session);
+    // add new room
+    const listRoomId = await addNewRooms(
+      newRoomType._id,
+      hotelSign._id,
+      roomNum,
+      session
+    );
 
-    hotelSign.roomType = [...listRoomId.flat()];
+    hotelSign.roomType = newRoomType._id;
+    hotelSign.Rooms = [...listRoomId.flat()];
 
     // Saving new hotel
     const hotelSignComplete = await hotelSign.save();
@@ -148,8 +154,6 @@ module.exports.getHotel = catchAsync(async (req, res, next) => {
   hotel.rating = data;
 
   const { userId, ...rest } = hotel._doc;
-
-  console.log(rest);
 
   rest.user = userId;
 

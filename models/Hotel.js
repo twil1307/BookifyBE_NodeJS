@@ -118,10 +118,13 @@ const hotelSchema = new Schema(
       ref: "Review",
     },
     roomType: {
-      type: [mongoose.Schema.Types.ObjectId],
+      type: mongoose.Schema.Types.ObjectId,
       ref: "RoomType",
     },
-
+    Rooms: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "Room",
+    },
     // followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     // following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
