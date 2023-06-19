@@ -9,6 +9,7 @@ const {
 } = require("../service/uploadImg");
 const { isUserEverStayHere } = require("../middleware/reviewQualify");
 const Roles = require("../enum/Role");
+const { countPageViews } = require("../middleware/pageViewMiddleware");
 
 // Create new hotel with role admin
 router.post(
@@ -33,7 +34,7 @@ router.post(
 );
 
 // Get specific hotel
-router.get("/:hotelId", hotelController.getHotel);
+router.get("/:hotelId", countPageViews, hotelController.getHotel);
 
 // update hotel
 router.put(

@@ -34,6 +34,8 @@ var bookingRouter = require("./routes/booking");
 var dashboardRouter = require("./routes/dashboard");
 const AppError = require("./utils/appError");
 
+// Count page visitor
+
 app.use("/amenity", amenityRouter);
 app.use("/dashboard", dashboardRouter);
 app.use("/hotel", hotelRouter);

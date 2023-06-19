@@ -130,6 +130,12 @@ const hotelSchema = new Schema(
   }
 );
 
+// hotelSchema.virtual('user', {
+//   ref: 'User',
+//   localField: 'objectId',
+//   foreignField: '_id'
+// });
+
 hotelSchema.statics.calculateAveragePoints = async function (hotelId) {
   const result = await this.aggregate([
     {

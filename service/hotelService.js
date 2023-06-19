@@ -103,15 +103,17 @@ const retrieveNewHotelImagePath = (req) => {
 };
 
 // Get average point for a specific hotel
-const getAveragePoint = async (hotelId) => {
-  const listReviews = await Hotel.findById(hotelId)
-    .select("reviews")
-    .populate(
-      "reviews",
-      "communicationPoint accuracyPoint locationPoint valuePoint -_id"
-    );
+const getAveragePoint = async (reviews) => {
+  const extractedArray = reviews.map((obj) => {
+    return {
+      communicationPoint: obj.communicationPoint,
+      accuracyPoint: obj.accuracyPoint,
+      locationPoint: obj.locationPoint,
+      valuePoint: obj.valuePoint,
+    };
+  });
 
-  return calculateAveragePoints(listReviews.reviews);
+  return calculateAveragePoints(extractedArray);
 };
 
 const calculateAveragePoints = (reviews) => {

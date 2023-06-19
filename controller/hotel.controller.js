@@ -134,20 +134,29 @@ module.exports.signNewHotelType = async (req, res) => {
 module.exports.getHotel = catchAsync(async (req, res, next) => {
   const hotel = await Hotel.findById(req.params.hotelId)
     .populate("hotelType")
-    .populate("userId", "-password -hotelBookmarked -updatedAt -dob")
-    .populate("hotelAmenities")
+    .populate({
+      path: "userId",
+      select: "username subName name avatar",
+    })
+    .populate("hotelAmenities", "-createdAt -updatedAt")
     .populate("roomType")
     .populate("reviews")
     .populate("rating");
 
-  const data = await getAveragePoint(req.params.hotelId);
+  const data = await getAveragePoint(hotel.reviews);
 
   hotel.rating = data;
+
+  const { userId, ...rest } = hotel._doc;
+
+  console.log(rest);
+
+  rest.user = userId;
 
   const bookedDate = await getUnavailableDateRanges(req.params.hotelId);
 
   if (hotel) {
-    return res.status(200).json({ hotel, fullyBookedDates: bookedDate });
+    return res.status(200).json({ hotel: rest, fullyBookedDates: bookedDate });
   } else {
     return next(new AppError("Hotel not found", 404));
   }
@@ -182,13 +191,17 @@ module.exports.getAllHotels = catchAsync(async (req, res, next) => {
 
 module.exports.reviewHotel = catchAsync(async (req, res, next) => {
   // Get all hotels
+
+  // Can use another way call "Using bulk write operations"
   const reviewObj = new Review(req.body);
+  reviewObj.hotelId = req.params.hotelId;
+  reviewObj.userId = req.user._id;
 
   const hotel = await Hotel.findById(req.params.hotelId);
   if (hotel) {
     await reviewObj.save();
 
-    hotel.reviews.push(reviewObj);
+    hotel.reviews.push(reviewObj._id);
 
     await hotel.save();
 

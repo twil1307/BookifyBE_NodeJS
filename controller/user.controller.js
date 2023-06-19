@@ -190,6 +190,12 @@ module.exports.verifyJwtToken = catchAsync(async (req, res, next) => {
   // Hash user password
   const { accessToken } = req.cookies;
 
+  if (!accessToken) {
+    return res.status(401).json({
+      message: "Login required",
+    });
+  }
+
   const token = accessToken.replace("Bearer ", "");
 
   const result = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
