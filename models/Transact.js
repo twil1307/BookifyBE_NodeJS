@@ -20,46 +20,33 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const transactSchema = new Schema({
-  transactId: {
-    type: String,
-    required: true,
+const transactSchema = new Schema(
+  {
+    transactId: {
+      type: String,
+      required: true,
+    },
+    ammount: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    type: {
+      type: String,
+      default: "Banking",
+    },
+    spectDate: {
+      type: Date,
+    },
+    walletAmount: {
+      type: Number,
+    },
+    hotelId: { type: mongoose.Schema.Types.ObjectId, ref: "Hotel" },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
-  createAt: {
-    type: Date,
-    required: true,
-    default: Date.now(),
-  },
-  ammount: {
-    type: Number,
-    required: true,
-    default: 0,
-  },
-  type: {
-    type: Number,
-    required: [true, "Type required"],
-  },
-  spectDate: {
-    type: String,
-    required: [true, "Username required"],
-  },
-  walletAmount: {
-    type: [Number],
-    required: [true, "Username required"],
-  },
-  totalPaymentPerDay: {
-    type: [Number],
-    required: [true, "Username required"],
-  },
-  month: {
-    type: Number,
-    required: true,
-  },
-  hotelName: {
-    type: String,
-    required: true,
-  },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-});
+  {
+    timestamps: true,
+  }
+);
 
 module.exports = mongoose.model("Transact", transactSchema);

@@ -13,7 +13,7 @@ const {
   getNumberOfRatingByMonth,
   getNumberOfUserRegisteredByMonth,
   getReportData,
-  getDashboardIncomeMonths,
+  getDashboardExchangeMonthly,
 } = require("../service/dashBoardService");
 
 // Get all hotel for dashboard (To enable hotel (?))
@@ -247,7 +247,7 @@ module.exports.getDashBoardExchangeInfo = catchAsync(async (req, res, next) => {
 
   switch (type) {
     case "month":
-      getDashboardIncomeMonths(req, res, next);
+      getDashboardExchangeMonthly(req, res, next);
       break;
 
     default:

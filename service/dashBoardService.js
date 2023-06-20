@@ -100,32 +100,46 @@ const getHotelIncomeMonths = catchAsync(async (req, res, next) => {
   }
 });
 
-const getDashboardIncomeMonths = catchAsync(async (req, res, next) => {
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
+const getDashboardExchangeMonthly = catchAsync(async (req, res, next) => {
+  const year = req.query.year;
   // if there is month, server will return the a specific month data
   const bookingData = await Booking.find({
     $and: [
       {
-        $expr: { $eq: [{ $year: "$createdAt" }, currentYear] },
+        $expr: { $eq: [{ $year: "$createdAt" }, year] },
       },
     ],
-  }).select("createdAt price");
+  })
+    .select("createdAt price user")
+    .populate("user", "subName name username");
 
-  const { monthlyIncome, total } = await getDashboardIncomeByMonthly(
-    bookingData
-  );
+  const { monthlyData, total } = await getDashboardIncomeMonthly(bookingData);
 
-  console.log(monthlyIncome);
-  console.log(total);
+  const transactData = await getDashboardIncomeHistory(bookingData);
 
   return res.status(200).json({
-    income: monthlyIncome,
+    income: monthlyData,
     total: total,
+    transactData: transactData,
   });
 });
 
-const getDashboardIncomeByMonthly = async (bookingData) => {
+const getDashboardIncomeHistory = async (bookingData) => {
+  const data = bookingData.map((booking) => ({
+    username:
+      !booking.user.subName || !booking.user.name
+        ? booking.user.username
+        : `${booking.user.subName} ${booking.user.name}`,
+    userId: booking.user._id,
+    createdAt: booking.createdAt,
+    price: booking.price,
+    bookingId: booking._id,
+  }));
+
+  return data;
+};
+
+const getDashboardIncomeMonthly = async (bookingData) => {
   const monthShortNames = [
     "Jan",
     "Feb",
@@ -142,23 +156,30 @@ const getDashboardIncomeByMonthly = async (bookingData) => {
   ];
   let total = 0;
 
-  const monthlyIncome = bookingData.reduce((accumulator, item) => {
+  const monthlyData = {};
+
+  for (let i = 0; i < monthShortNames.length; i++) {
+    monthlyData[monthShortNames[i]] = 0;
+  }
+
+  bookingData.reduce((accumulator, item) => {
     const date = new Date(item.createdAt);
     const month = date.getMonth();
     const monthStr = monthShortNames[month];
 
-    if (!accumulator[monthStr]) {
-      accumulator[monthStr] = 0;
-    }
+    // if (!accumulator[monthStr]) {
+    //   accumulator[monthStr] = 0;
+    // }
 
-    accumulator[monthStr] += item.price;
+    monthlyData[monthStr] += item.price;
+    // accumulator[monthStr] += item.price;
 
     total += item.price;
 
     return accumulator;
   }, {});
 
-  return { monthlyIncome, total };
+  return { monthlyData, total };
 };
 
 const getHotelRating = catchAsync(async (req, res, next) => {
@@ -549,5 +570,5 @@ module.exports = {
   getNumberOfRatingByMonth,
   getNumberOfUserRegisteredByMonth,
   getReportData,
-  getDashboardIncomeMonths,
+  getDashboardExchangeMonthly,
 };
