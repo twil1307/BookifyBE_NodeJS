@@ -48,10 +48,9 @@ const addNewAmenityNotExisted = async (newAmenities, session) => {
   return Object.values(listId.insertedIds);
 };
 
-const addNewRooms = async (newRoomTypeId, hotelId, roomNum, session) => {
+const addNewRooms = async (hotelId, roomNum, session) => {
   const roomObjData = {
     hotelId: hotelId,
-    roomTypeId: newRoomTypeId,
   };
 
   // add new roomtype

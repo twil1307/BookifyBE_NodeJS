@@ -32,7 +32,7 @@ const isExactHotelHost = catchAsync(async (req, res, next) => {
   const userId = req.user._id;
   const hotelId = req.query.hotelId;
 
-  const hotelOwnerId = await Hotel.findById(hotelId).select("userId -_id");
+  const hotelOwnerId = await Hotel.findById(hotelId).select("user -_id");
 
   console.log(hotelOwnerId);
 

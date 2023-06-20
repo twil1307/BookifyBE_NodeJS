@@ -3,6 +3,7 @@ const Booking = require("../models/Booking");
 const Review = require("../models/Review");
 const PageView = require("../models/PageView");
 const User = require("../models/User");
+const Reports = require("../models/Report");
 const AppError = require("../utils/appError");
 
 const getHotelIncome = async (bookingData) => {
@@ -99,6 +100,64 @@ const getHotelIncomeMonths = catchAsync(async (req, res, next) => {
   }
 });
 
+const getDashboardIncomeMonths = catchAsync(async (req, res, next) => {
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  // if there is month, server will return the a specific month data
+  const bookingData = await Booking.find({
+    $and: [
+      {
+        $expr: { $eq: [{ $year: "$createdAt" }, currentYear] },
+      },
+    ],
+  }).select("createdAt price");
+
+  const { monthsIncome, total } = await getDashboardIncomeByMonthly(
+    bookingData
+  );
+
+  return res.status(200).json({
+    income: monthsIncome,
+    total: total,
+  });
+});
+
+const getDashboardIncomeByMonthly = async (bookingData) => {
+  const monthShortNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  let total = 0;
+
+  const monthlyIncome = bookingData.reduce((accumulator, item) => {
+    const date = new Date(item.createdAt);
+    const month = date.getMonth();
+    const monthStr = monthShortNames[month];
+
+    if (!accumulator[monthStr]) {
+      accumulator[monthStr] = 0;
+    }
+
+    accumulator[monthStr] += item.price;
+
+    total += item.price;
+
+    return accumulator;
+  }, {});
+
+  return { monthlyIncome, total };
+};
+
 const getHotelRating = catchAsync(async (req, res, next) => {
   const hotelId = req.params.hotelId;
   const point = req.query.point;
@@ -106,28 +165,20 @@ const getHotelRating = catchAsync(async (req, res, next) => {
   let reviewsList;
 
   if (!point) {
-    reviewsList = await Review.find({ hotelId: hotelId })
-      .populate({
-        path: "hotelId",
-        select: "hotelName backgroundImg",
-      })
-      .populate({
-        path: "userId",
-        select: "subName name avatar",
-      });
+    reviewsList = await Review.find({ hotelId: hotelId }).populate({
+      path: "user",
+      select: "subName name avatar",
+    });
   } else {
     reviewsList = await Review.find({
       $and: [{ hotelId: hotelId }, { averagePoint: point }],
-    })
-      .populate({
-        path: "hotelId",
-        select: "hotelName backgroundImg",
-      })
-      .populate({
-        path: "userId",
-        select: "subName name avatar",
-      });
+    }).populate({
+      path: "user",
+      select: "subName name avatar",
+    });
   }
+
+  console.log(reviewsList);
 
   return res.status(200).json({
     reviews: reviewsList,
@@ -210,16 +261,30 @@ const getNumberOfBookingByMonth = async (req, res, next) => {
   try {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
-
     const month = req.query.month;
+
+    const { previousMonth, previousYear } = getPreviousMonthAndPreviousYear(
+      month,
+      currentYear
+    );
 
     let fluctuations = 0;
 
     // Get booking data this month
-    const numberOfBookingThisMonth = await Booking.find({
-      $and: [
-        { $expr: { $eq: [{ $month: "$createdAt" }, month] } },
-        { $expr: { $eq: [{ $year: "$createdAt" }, currentYear] } },
+    const bookingData = await Booking.find({
+      $or: [
+        {
+          $and: [
+            { $expr: { $eq: [{ $month: "$createdAt" }, month] } },
+            { $expr: { $eq: [{ $year: "$createdAt" }, currentYear] } },
+          ],
+        },
+        {
+          $and: [
+            { $expr: { $eq: [{ $month: "$createdAt" }, previousMonth] } },
+            { $expr: { $eq: [{ $year: "$createdAt" }, previousYear] } },
+          ],
+        },
       ],
     }).populate({
       path: "hotelId",
@@ -230,23 +295,26 @@ const getNumberOfBookingByMonth = async (req, res, next) => {
       },
     });
 
-    const { previousMonth, previousYear } = getPreviousMonthAndPreviousYear(
-      month,
-      currentYear
-    );
+    // Filter out the booking data for this month and the previous month
+    const numberOfBookingThisMonth = bookingData.filter((booking) => {
+      return (
+        booking.createdAt.getMonth() + 1 == month &&
+        booking.createdAt.getFullYear() == currentYear
+      );
+    });
 
-    // Get booking data previous month
-    const numberOfBookingPreviousMonth = await Booking.find({
-      $and: [
-        { $expr: { $eq: [{ $month: "$createdAt" }, previousMonth] } },
-        { $expr: { $eq: [{ $year: "$createdAt" }, previousYear] } },
-      ],
+    const numberOfBookingPreviousMonth = bookingData.filter((booking) => {
+      return (
+        booking.createdAt.getMonth() + 1 == month - 1 &&
+        booking.createdAt.getFullYear() == previousYear
+      );
     });
 
     // Calculate how many percent increased or decreased compare this month to previous month
     if (numberOfBookingPreviousMonth.length != 0) {
       fluctuations =
-        ((numberOfBooking.length - numberOfBookingPreviousMonth.length) /
+        ((numberOfBookingThisMonth.length -
+          numberOfBookingPreviousMonth.length) /
           numberOfBookingPreviousMonth.length) *
         100;
     }
@@ -254,8 +322,6 @@ const getNumberOfBookingByMonth = async (req, res, next) => {
     // Get total booking of each date booking
     const dailyBooking = getHotelBookingByDays(numberOfBookingThisMonth);
     const trendingBooking = getBookingTrending(numberOfBookingThisMonth);
-
-    console.log(trendingBooking);
 
     return {
       numberOfBooking: {
@@ -289,6 +355,8 @@ const getPreviousMonthAndPreviousYear = (month, currentYear) => {
 };
 
 const getBookingTrending = (bookingData) => {
+  console.log(bookingData[0]);
+
   const trendingBooking = bookingData.reduce((accumulator, item) => {
     const hotelType = item.hotelId.hotelType.hotelType;
 
@@ -312,6 +380,11 @@ const getNumberOfVisitorByMonth = async (req, res, next) => {
     const month = req.query.month;
     let fluctuations = 0;
 
+    const { previousMonth, previousYear } = getPreviousMonthAndPreviousYear(
+      month,
+      currentYear
+    );
+
     // Get number of visitors this month
     const numberOfVisitorsThisMonth = await PageView.countDocuments({
       $and: [
@@ -319,11 +392,6 @@ const getNumberOfVisitorByMonth = async (req, res, next) => {
         { $expr: { $eq: [{ $year: "$createdAt" }, currentYear] } },
       ],
     });
-
-    const { previousMonth, previousYear } = getPreviousMonthAndPreviousYear(
-      month,
-      currentYear
-    );
 
     // Get number of visitors previous month
     const numberOfVisitorsPreviousMonth = await PageView.countDocuments({
@@ -453,6 +521,20 @@ const getNumberOfUserRegisteredByMonth = async (req, res, next) => {
   }
 };
 
+const getReportData = async (req, res, next) => {
+  try {
+    const reports = Reports.find().populate([
+      { path: "hotelId", select: "hotelName" },
+      { path: "user", select: "username subName name avatar" },
+    ]);
+
+    return reports;
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+};
+
 module.exports = {
   getHotelIncome,
   getHotelIncomeByMonth,
@@ -463,4 +545,6 @@ module.exports = {
   getNumberOfBookingByMonth,
   getNumberOfRatingByMonth,
   getNumberOfUserRegisteredByMonth,
+  getReportData,
+  getDashboardIncomeByMonthly,
 };

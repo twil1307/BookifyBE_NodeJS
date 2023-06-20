@@ -1,6 +1,7 @@
 const Hotel = require("../models/Hotel");
 const HotelType = require("../models/HotelType");
 const Review = require("../models/Review");
+const Reports = require("../models/Report");
 
 require("dotenv").config();
 const mongoose = require("mongoose");
@@ -38,10 +39,12 @@ module.exports.signNewHotel = async (req, res, next) => {
       ...rest,
     };
 
-    const hotelAmenitySign = JSON.parse(req.body.amenities);
+    const hotelAmenitySign = JSON.parse(
+      JSON.stringify(eval(req.body.amenities))
+    );
 
     // pushing data to Hotel missing data
-    hotelSign.userId = req.user._id;
+    hotelSign.user = req.user._id;
     hotelSign.backgroundImg = backgroundImage;
     hotelImages.forEach((element) => {
       hotelSign.images.push(element);
@@ -66,19 +69,19 @@ module.exports.signNewHotel = async (req, res, next) => {
     hotelSign.hotelAmenities = [...listExistedAmenitiesAdd, ...newAmenitiesId];
 
     // add new room type
-    const newRoomType = new RoomType(roomTypeSign);
-    await newRoomType.save();
+    const newRoomTypeData = new RoomType(roomTypeSign);
+    const { _id, ...roomType } = newRoomTypeData;
+
+    console.log(roomType);
+
+    hotelSign.roomType = roomType;
 
     // add new room
-    const listRoomId = await addNewRooms(
-      newRoomType._id,
-      hotelSign._id,
-      roomNum,
-      session
-    );
+    const listRoomId = await addNewRooms(hotelSign._id, roomNum, session);
 
-    hotelSign.roomType = newRoomType._id;
     hotelSign.Rooms = [...listRoomId.flat()];
+
+    console.log(hotelSign);
 
     // Saving new hotel
     const hotelSignComplete = await hotelSign.save();
@@ -114,6 +117,8 @@ module.exports.signNewHotel = async (req, res, next) => {
 
 module.exports.signNewHotelType = async (req, res) => {
   try {
+    console.log(req.body);
+
     const hotelTypeSign = new HotelType(req.body);
 
     const newType = await hotelTypeSign.save();
@@ -141,7 +146,7 @@ module.exports.getHotel = catchAsync(async (req, res, next) => {
   const hotel = await Hotel.findById(req.params.hotelId)
     .populate("hotelType")
     .populate({
-      path: "userId",
+      path: "user",
       select: "username subName name avatar",
     })
     .populate("hotelAmenities", "-createdAt -updatedAt")
@@ -153,14 +158,10 @@ module.exports.getHotel = catchAsync(async (req, res, next) => {
 
   hotel.rating = data;
 
-  const { userId, ...rest } = hotel._doc;
-
-  rest.user = userId;
-
   const bookedDate = await getUnavailableDateRanges(req.params.hotelId);
 
   if (hotel) {
-    return res.status(200).json({ hotel: rest, fullyBookedDates: bookedDate });
+    return res.status(200).json({ hotel: hotel, fullyBookedDates: bookedDate });
   } else {
     return next(new AppError("Hotel not found", 404));
   }
@@ -198,8 +199,9 @@ module.exports.reviewHotel = catchAsync(async (req, res, next) => {
 
   // Can use another way call "Using bulk write operations"
   const reviewObj = new Review(req.body);
+
   reviewObj.hotelId = req.params.hotelId;
-  reviewObj.userId = req.user._id;
+  reviewObj.user = req.user._id;
 
   const hotel = await Hotel.findById(req.params.hotelId);
   if (hotel) {
@@ -210,6 +212,24 @@ module.exports.reviewHotel = catchAsync(async (req, res, next) => {
     await hotel.save();
 
     return res.status(200).json({ message: "Review successfully" });
+  } else {
+    return next(new AppError("Hotels not found", 404));
+  }
+});
+
+module.exports.reportHotel = catchAsync(async (req, res, next) => {
+  // Can use another way call "Using bulk write operations"
+  const reportObj = new Reports(req.body);
+  reportObj.hotelId = req.params.hotelId;
+  reportObj.user = req.user._id;
+
+  const hotel = await Hotel.findById(req.params.hotelId);
+  if (hotel) {
+    await reportObj.save();
+
+    return res
+      .status(200)
+      .json({ message: "Your report has been sent successfully" });
   } else {
     return next(new AppError("Hotels not found", 404));
   }

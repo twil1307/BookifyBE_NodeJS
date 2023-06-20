@@ -12,13 +12,15 @@ const {
   getNumberOfBookingByMonth,
   getNumberOfRatingByMonth,
   getNumberOfUserRegisteredByMonth,
+  getReportData,
+  getDashboardIncomeByMonthly,
 } = require("../service/dashBoardService");
 
 // Get all hotel for dashboard (To enable hotel (?))
 module.exports.getAllHotelsDashBoard = catchAsync(async (req, res, next) => {
   const hotels = await Hotel.find({})
-    .populate({ path: "userId", select: "_id subName name" })
-    .select("hotelName createdAt userId");
+    .populate({ path: "user", select: "_id subName name" })
+    .select("hotelName createdAt user");
 
   return res.status(200).json({
     hotels: hotels,
@@ -190,6 +192,9 @@ module.exports.getHotelDetailsInfo = catchAsync(async (req, res, next) => {
       getHotelVisitors(req, res, next);
       break;
     default:
+      return res.status(404).json({
+        message: `${type} is not supported`,
+      });
       break;
   }
 });
@@ -216,6 +221,8 @@ module.exports.getDashBoardDetailsInfo = catchAsync(async (req, res, next) => {
       next
     );
 
+    const reportData = await getReportData(req, res, next);
+
     return res.status(200).json({
       overallData: {
         numberOfBooking,
@@ -228,8 +235,22 @@ module.exports.getDashBoardDetailsInfo = catchAsync(async (req, res, next) => {
         dailyBooking,
         trendingBooking,
       },
+      reports: reportData,
     });
   } catch (error) {
     next(error);
+  }
+});
+
+module.exports.getDashBoardExchangeInfo = catchAsync(async (req, res, next) => {
+  const type = req.query.type;
+
+  switch (type) {
+    case "month":
+      getDashboardIncomeByMonthly(req, res, next);
+      break;
+
+    default:
+      break;
   }
 });

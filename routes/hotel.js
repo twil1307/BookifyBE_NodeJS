@@ -18,8 +18,8 @@ router.post(
   hasRole(Roles.ADMIN),
   hotelImageUploaderLocal.fields([
     { name: "backgroundImage", maxCount: 1 },
-    { name: "hotelImage", maxCount: 5 },
-    { name: "viewImage", maxCount: 5 },
+    { name: "hotelImage", maxCount: 10 },
+    { name: "viewImage", maxCount: 10 },
   ]),
   hotelController.signNewHotel
 );
@@ -68,6 +68,15 @@ router.post(
   jwtMiddleware,
   isUserEverStayHere,
   hotelController.reviewHotel
+);
+
+// review hotel
+router.post(
+  "/:hotelId/report",
+  formDataRetrieve.none(),
+  jwtMiddleware,
+  isUserEverStayHere,
+  hotelController.reportHotel
 );
 
 module.exports = router;

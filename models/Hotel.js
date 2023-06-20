@@ -1,11 +1,44 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const ratingSchema = mongoose.Schema({
-  communicationPoint: { type: Number, default: 0 },
-  accuracyPoint: { type: Number, default: 0 },
-  locationPoint: { type: Number, default: 0 },
-  valuePoint: { type: Number, default: 0 },
+const roomTypeSchema = new Schema({
+  roomTypeId: {
+    type: mongoose.Schema.Types.ObjectId,
+  },
+  roomPrice: {
+    type: Number,
+    required: [true, "Price required"],
+  },
+  bedType: {
+    type: String,
+    required: [true, "Bed type required"],
+    default: "Normal",
+  },
+  bedNum: {
+    type: Number,
+    required: [true, "Bed number required"],
+  },
+  bathroomType: {
+    type: String,
+    required: [true, "Bathroom type required"],
+    default: "Normal",
+  },
+  bathNum: {
+    type: Number,
+    required: [true, "Bathroom number required"],
+  },
+  maxGuest: {
+    type: Number,
+    required: [true, "Max guest per room required"],
+  },
+  bedroomNum: {
+    type: Number,
+    required: [true, "Number of bedroom required"],
+  },
+  isbathPrivate: {
+    type: String,
+    required: [true, "Is bathroom private"],
+  },
 });
 
 const hotelSchema = new Schema(
@@ -13,7 +46,7 @@ const hotelSchema = new Schema(
     hotelId: {
       type: mongoose.Schema.Types.ObjectId,
     },
-    userId: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       ref: "User",
@@ -82,7 +115,7 @@ const hotelSchema = new Schema(
     },
     averagePrice: {
       type: Number,
-      required: true,
+      required: false,
     },
     rating: {
       type: {
@@ -118,8 +151,8 @@ const hotelSchema = new Schema(
       ref: "Review",
     },
     roomType: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "RoomType",
+      type: roomTypeSchema,
+      required: [true, "Room type required"],
     },
     Rooms: {
       type: [mongoose.Schema.Types.ObjectId],
@@ -132,12 +165,6 @@ const hotelSchema = new Schema(
     timestamps: true,
   }
 );
-
-// hotelSchema.virtual('user', {
-//   ref: 'User',
-//   localField: 'objectId',
-//   foreignField: '_id'
-// });
 
 hotelSchema.statics.calculateAveragePoints = async function (hotelId) {
   const result = await this.aggregate([

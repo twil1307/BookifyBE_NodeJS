@@ -53,11 +53,17 @@ router.get(
 );
 
 router.get(
-  "/income/:hotelId",
+  "/income",
   jwtMiddleware,
-  isExactHost,
-  hasRole(Roles.HOST, Roles.ADMIN),
+  hasRole(Roles.ADMIN),
   dashboardController.getDashBoardDetailsInfo
+);
+
+router.get(
+  "/exchange",
+  jwtMiddleware,
+  hasRole(Roles.ADMIN),
+  dashboardController.getDashBoardExchangeInfo
 );
 
 module.exports = router;

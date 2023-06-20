@@ -1,5 +1,6 @@
 const Booking = require("../models/Booking");
 const Room = require("../models/Room");
+const Hotel = require("../models/Hotel");
 const BankingAccount = require("../models/BankingAccount");
 const catchAsync = require("../utils/catchAsync");
 const mongoose = require("mongoose");
@@ -21,18 +22,23 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
 
     // - solution 2
     // Get both roomId and price
-    const hotelRoomIdsAndPrice = await Room.find({
-      hotelId: bookingRequest.hotelId,
-    })
-      .select("_id roomTypeId")
-      .populate({ path: "roomTypeId", select: "roomPrice" })
-      .sort({ _id: 1 });
+    // const hotelRoomIdsAndPrice = await Room.find({
+    //   hotelId: bookingRequest.hotelId,
+    // })
+    //   .select("_id roomType")
+    //   .sort({ _id: 1 });
+
+    const hotelRoomIdsAndPrice = await Hotel.findById(
+      bookingRequest.hotelId
+    ).select("Rooms roomType");
 
     // Filter out _id only
-    const hotelRoomIds = hotelRoomIdsAndPrice.map((obj) => obj._id);
+    const hotelRoomIds = hotelRoomIdsAndPrice.Rooms;
+
+    console.log(hotelRoomIds);
 
     // Get out price only
-    const roomPrice = hotelRoomIdsAndPrice[0].roomTypeId.roomPrice;
+    const roomPrice = hotelRoomIdsAndPrice.roomType.roomPrice;
 
     bookingRequest.price = roomPrice;
 
@@ -44,19 +50,25 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
             {
               $and: [
                 { checkin: { $lte: bookingRequest.checkin } },
-                { checkout: { $gte: bookingRequest.checkin } },
+                { checkout: { $gte: bookingRequest.checkout } },
+              ],
+            },
+            {
+              $and: [
+                { checkin: { $gt: bookingRequest.checkin } },
+                { checkout: { $gte: bookingRequest.checkout } },
               ],
             },
             {
               $and: [
                 { checkin: { $lt: bookingRequest.checkin } },
-                { checkout: { $gte: bookingRequest.checkout } },
+                { checkout: { $lte: bookingRequest.checkout } },
               ],
             },
             {
               $and: [
-                { checkin: { $lte: bookingRequest.checkin } },
-                { checkout: { $gte: bookingRequest.checkout } },
+                { checkin: { $gt: bookingRequest.checkin } },
+                { checkout: { $lt: bookingRequest.checkout } },
               ],
             },
           ],
@@ -66,6 +78,8 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
         },
       ],
     });
+
+    console.log(bookingCheck);
 
     bookingRequest.userId = req.user._id;
 
@@ -87,6 +101,8 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
       const roomAvailable = hotelRoomIds.filter((element) =>
         bookingCheck.every((item) => item.toString() !== element.toString())
       );
+
+      console.log(roomAvailable);
 
       // push the first room of the array for the booking request of guest
       bookingRequest.roomId = roomAvailable[0];
