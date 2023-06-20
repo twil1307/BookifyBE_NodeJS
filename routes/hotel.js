@@ -10,6 +10,11 @@ const {
 const { isUserEverStayHere } = require("../middleware/reviewQualify");
 const Roles = require("../enum/Role");
 
+router.get("/test", (req, res, next) => {
+  console.log(JSON.parse(req.query.p));  
+  return res.json("Ok hup'");
+})
+
 // Create new hotel with role admin
 router.post(
   "/",
