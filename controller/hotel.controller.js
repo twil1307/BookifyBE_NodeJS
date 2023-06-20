@@ -1,6 +1,8 @@
 const Hotel = require("../models/Hotel");
 const HotelType = require("../models/HotelType");
 const Review = require("../models/Review");
+const Reports = require("../models/Report");
+
 require("dotenv").config();
 const mongoose = require("mongoose");
 const AppError = require("../utils/appError");
@@ -8,13 +10,13 @@ const catchAsync = require("../utils/catchAsync");
 const fileDelete = require("../utils/fileDelete");
 const { getUnavailableDateRanges } = require("../service/bookingService");
 const {
-	getAmenitiesInsertNotDuplicate,
-	getListAmenityDuplicatedId,
-	addNewAmenityNotExisted,
-	addNewRoomType,
-	retrieveNewHotelImage,
-	retrieveNewHotelImagePath,
-	getAveragePoint,
+  getAmenitiesInsertNotDuplicate,
+  getListAmenityDuplicatedId,
+  addNewAmenityNotExisted,
+  addNewRooms,
+  retrieveNewHotelImage,
+  retrieveNewHotelImagePath,
+  getAveragePoint,
 } = require("../service/hotelService");
 const RoomType = require("../models/RoomType");
 
@@ -37,17 +39,19 @@ module.exports.signNewHotel = async (req, res, next) => {
 			...rest,
 		};
 
-		const hotelAmenitySign = JSON.parse(req.body.amenities);
+    const hotelAmenitySign = JSON.parse(
+      JSON.stringify(eval(req.body.amenities))
+    );
 
-		// pushing data to Hotel missing data
-		hotelSign.userId = req.user._id;
-		hotelSign.backgroundImg = backgroundImage;
-		hotelImages.forEach((element) => {
-			hotelSign.images.push(element);
-		});
-		viewImages.forEach((element) => {
-			hotelSign.images.push(element);
-		});
+    // pushing data to Hotel missing data
+    hotelSign.user = req.user._id;
+    hotelSign.backgroundImg = backgroundImage;
+    hotelImages.forEach((element) => {
+      hotelSign.images.push(element);
+    });
+    viewImages.forEach((element) => {
+      hotelSign.images.push(element);
+    });
 
 		// get new amenities which is not existed in the DB
 		const newAmenities = await getAmenitiesInsertNotDuplicate(
@@ -72,14 +76,20 @@ module.exports.signNewHotel = async (req, res, next) => {
 			...newAmenitiesId,
 		];
 
-		// add new roomtype
-		const roomsData = Array.from({ length: roomNum }, () => {
-			return roomTypeSign;
-		});
+    // add new room type
+    const newRoomTypeData = new RoomType(roomTypeSign);
+    const { _id, ...roomType } = newRoomTypeData;
 
-		const listRoomId = await addNewRoomType(roomsData, session);
+    console.log(roomType);
 
-		hotelSign.roomType = [...listRoomId.flat()];
+    hotelSign.roomType = roomType;
+
+    // add new room
+    const listRoomId = await addNewRooms(hotelSign._id, roomNum, session);
+
+    hotelSign.Rooms = [...listRoomId.flat()];
+
+    console.log(hotelSign);
 
 		// Saving new hotel
 		const hotelSignComplete = await hotelSign.save();
@@ -114,8 +124,10 @@ module.exports.signNewHotel = async (req, res, next) => {
 };
 
 module.exports.signNewHotelType = async (req, res) => {
-	try {
-		const hotelTypeSign = new HotelType(req.body);
+  try {
+    console.log(req.body);
+
+    const hotelTypeSign = new HotelType(req.body);
 
 		const newType = await hotelTypeSign.save();
 
@@ -139,25 +151,28 @@ module.exports.signNewHotelType = async (req, res) => {
 };
 
 module.exports.getHotel = catchAsync(async (req, res, next) => {
-	const hotel = await Hotel.findById(req.params.hotelId)
-		.populate("hotelType")
-		.populate("userId", "-password -hotelBookmarked -updatedAt -dob")
-		.populate("hotelAmenities")
-		.populate("roomType")
-		.populate("reviews")
-		.populate("rating");
+  const hotel = await Hotel.findById(req.params.hotelId)
+    .populate("hotelType")
+    .populate({
+      path: "user",
+      select: "username subName name avatar",
+    })
+    .populate("hotelAmenities", "-createdAt -updatedAt")
+    .populate("roomType")
+    .populate("reviews")
+    .populate("rating");
 
-	const data = await getAveragePoint(req.params.hotelId);
+  const data = await getAveragePoint(hotel.reviews);
 
 	hotel.rating = data;
 
 	const bookedDate = await getUnavailableDateRanges(req.params.hotelId);
 
-	if (hotel) {
-		return res.status(200).json({ hotel, fullyBookedDates: bookedDate });
-	} else {
-		return next(new AppError("Hotel not found", 404));
-	}
+  if (hotel) {
+    return res.status(200).json({ hotel: hotel, fullyBookedDates: bookedDate });
+  } else {
+    return next(new AppError("Hotel not found", 404));
+  }
 });
 
 Date.prototype.addDays = function (days) {
@@ -214,14 +229,19 @@ module.exports.getAllHotels = catchAsync(async (req, res, next) => {
 });
 
 module.exports.reviewHotel = catchAsync(async (req, res, next) => {
-	// Get all hotels
-	const reviewObj = new Review(req.body);
+  // Get all hotels
 
-	const hotel = await Hotel.findById(req.params.hotelId);
-	if (hotel) {
-		await reviewObj.save();
+  // Can use another way call "Using bulk write operations"
+  const reviewObj = new Review(req.body);
 
-		hotel.reviews.push(reviewObj);
+  reviewObj.hotelId = req.params.hotelId;
+  reviewObj.user = req.user._id;
+
+  const hotel = await Hotel.findById(req.params.hotelId);
+  if (hotel) {
+    await reviewObj.save();
+
+    hotel.reviews.push(reviewObj._id);
 
 		await hotel.save();
 
@@ -229,6 +249,24 @@ module.exports.reviewHotel = catchAsync(async (req, res, next) => {
 	} else {
 		return next(new AppError("Hotels not found", 404));
 	}
+});
+
+module.exports.reportHotel = catchAsync(async (req, res, next) => {
+  // Can use another way call "Using bulk write operations"
+  const reportObj = new Reports(req.body);
+  reportObj.hotelId = req.params.hotelId;
+  reportObj.user = req.user._id;
+
+  const hotel = await Hotel.findById(req.params.hotelId);
+  if (hotel) {
+    await reportObj.save();
+
+    return res
+      .status(200)
+      .json({ message: "Your report has been sent successfully" });
+  } else {
+    return next(new AppError("Hotels not found", 404));
+  }
 });
 
 module.exports.getReviewsByAveragePoint = catchAsync(async (req, res, next) => {

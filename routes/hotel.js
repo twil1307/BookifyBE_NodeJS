@@ -9,6 +9,7 @@ const {
 } = require("../service/uploadImg");
 const { isUserEverStayHere } = require("../middleware/reviewQualify");
 const Roles = require("../enum/Role");
+const { countPageViews } = require("../middleware/pageViewMiddleware");
 
 router.get("/test", (req, res, next) => {
   console.log(JSON.parse(req.query.p));  
@@ -22,8 +23,8 @@ router.post(
   hasRole(Roles.ADMIN),
   hotelImageUploaderLocal.fields([
     { name: "backgroundImage", maxCount: 1 },
-    { name: "hotelImage", maxCount: 5 },
-    { name: "viewImage", maxCount: 5 },
+    { name: "hotelImage", maxCount: 10 },
+    { name: "viewImage", maxCount: 10 },
   ]),
   hotelController.signNewHotel
 );
@@ -38,7 +39,7 @@ router.post(
 );
 
 // Get specific hotel
-router.get("/:hotelId", hotelController.getHotel);
+router.get("/:hotelId", countPageViews, hotelController.getHotel);
 
 // update hotel
 router.put(
@@ -72,6 +73,15 @@ router.post(
   jwtMiddleware,
   isUserEverStayHere,
   hotelController.reviewHotel
+);
+
+// review hotel
+router.post(
+  "/:hotelId/report",
+  formDataRetrieve.none(),
+  jwtMiddleware,
+  isUserEverStayHere,
+  hotelController.reportHotel
 );
 
 module.exports = router;

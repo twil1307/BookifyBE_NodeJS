@@ -7,7 +7,7 @@ const {
   hotelImageUploaderLocal,
   formDataRetrieve,
 } = require("../service/uploadImg");
-const { isUserEverStayHere } = require("../middleware/reviewQualify");
+const { isExactHotelHost } = require("../middleware/reviewQualify");
 const Roles = require("../enum/Role");
 
 // get all hotel (admin?)
@@ -20,11 +20,50 @@ router.get(
 
 // get a hotel income per month (host)
 router.get(
-  "/hotels/months/income",
+  "/hotels/manage/income/:hotelId",
   jwtMiddleware,
-  formDataRetrieve.none(),
+  isExactHost,
   hasRole(Roles.HOST, Roles.ADMIN),
-  dashboardController.getHotelIncomePerMonth
+  dashboardController.getHotelIncomeMonths
+);
+
+// Should be included in 1 route only?
+router.get(
+  "/hotels/manage/booking/:hotelId",
+  jwtMiddleware,
+  isExactHost,
+  hasRole(Roles.HOST, Roles.ADMIN),
+  dashboardController.getHotelBookingAll
+);
+
+router.get(
+  "/hotels/manage/booking/today/:hotelId",
+  jwtMiddleware,
+  isExactHost,
+  hasRole(Roles.HOST, Roles.ADMIN),
+  dashboardController.getHotelBookingToday
+);
+
+router.get(
+  "/hotels/manage/details/:hotelId",
+  jwtMiddleware,
+  isExactHost,
+  hasRole(Roles.HOST, Roles.ADMIN),
+  dashboardController.getHotelDetailsInfo
+);
+
+router.get(
+  "/income",
+  jwtMiddleware,
+  hasRole(Roles.ADMIN),
+  dashboardController.getDashBoardDetailsInfo
+);
+
+router.get(
+  "/exchange",
+  jwtMiddleware,
+  hasRole(Roles.ADMIN),
+  dashboardController.getDashBoardExchangeInfo
 );
 
 module.exports = router;
