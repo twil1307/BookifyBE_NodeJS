@@ -112,12 +112,15 @@ const getDashboardIncomeMonths = catchAsync(async (req, res, next) => {
     ],
   }).select("createdAt price");
 
-  const { monthsIncome, total } = await getDashboardIncomeByMonthly(
+  const { monthlyIncome, total } = await getDashboardIncomeByMonthly(
     bookingData
   );
 
+  console.log(monthlyIncome);
+  console.log(total);
+
   return res.status(200).json({
-    income: monthsIncome,
+    income: monthlyIncome,
     total: total,
   });
 });
@@ -546,5 +549,5 @@ module.exports = {
   getNumberOfRatingByMonth,
   getNumberOfUserRegisteredByMonth,
   getReportData,
-  getDashboardIncomeByMonthly,
+  getDashboardIncomeMonths,
 };

@@ -28,9 +28,9 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
     //   .select("_id roomType")
     //   .sort({ _id: 1 });
 
-    const hotelRoomIdsAndPrice = await Hotel.findById(
-      bookingRequest.hotelId
-    ).select("Rooms roomType");
+    const hotelRoomIdsAndPrice = await Hotel.findById(bookingRequest.hotelId)
+      .select("Rooms roomType")
+      .sort({ _id: 1 });
 
     // Filter out _id only
     const hotelRoomIds = hotelRoomIdsAndPrice.Rooms;
@@ -50,25 +50,19 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
             {
               $and: [
                 { checkin: { $lte: bookingRequest.checkin } },
-                { checkout: { $gte: bookingRequest.checkout } },
-              ],
-            },
-            {
-              $and: [
-                { checkin: { $gt: bookingRequest.checkin } },
-                { checkout: { $gte: bookingRequest.checkout } },
+                { checkout: { $gte: bookingRequest.checkin } },
               ],
             },
             {
               $and: [
                 { checkin: { $lt: bookingRequest.checkin } },
-                { checkout: { $lte: bookingRequest.checkout } },
+                { checkout: { $gte: bookingRequest.checkout } },
               ],
             },
             {
               $and: [
-                { checkin: { $gt: bookingRequest.checkin } },
-                { checkout: { $lt: bookingRequest.checkout } },
+                { checkin: { $lte: bookingRequest.checkin } },
+                { checkout: { $gte: bookingRequest.checkout } },
               ],
             },
           ],
@@ -81,7 +75,7 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
 
     console.log(bookingCheck);
 
-    bookingRequest.userId = req.user._id;
+    bookingRequest.user = req.user._id;
 
     // Compare 2 array
     // Check if rooms id is equal to the rooms of overlap day, if equals => all the rooms in the date range are booked
@@ -102,7 +96,7 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
         bookingCheck.every((item) => item.toString() !== element.toString())
       );
 
-      console.log(roomAvailable);
+      // console.log(roomAvailable);
 
       // push the first room of the array for the booking request of guest
       bookingRequest.roomId = roomAvailable[0];

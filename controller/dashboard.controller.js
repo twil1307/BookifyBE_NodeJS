@@ -13,7 +13,7 @@ const {
   getNumberOfRatingByMonth,
   getNumberOfUserRegisteredByMonth,
   getReportData,
-  getDashboardIncomeByMonthly,
+  getDashboardIncomeMonths,
 } = require("../service/dashBoardService");
 
 // Get all hotel for dashboard (To enable hotel (?))
@@ -247,10 +247,13 @@ module.exports.getDashBoardExchangeInfo = catchAsync(async (req, res, next) => {
 
   switch (type) {
     case "month":
-      getDashboardIncomeByMonthly(req, res, next);
+      getDashboardIncomeMonths(req, res, next);
       break;
 
     default:
+      return res.status(404).json({
+        message: `Type ${type} not supported`,
+      });
       break;
   }
 });

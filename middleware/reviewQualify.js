@@ -7,7 +7,7 @@ const isUserEverStayHere = catchAsync(async (req, res, next) => {
   const hotelId = req.params.hotelId;
 
   const userBooking = await Booking.find({
-    userId: userId,
+    user: userId,
     hotelId: hotelId,
   });
 

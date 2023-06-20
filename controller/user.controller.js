@@ -53,7 +53,7 @@ module.exports.updateUser = catchAsync(async (req, res, next) => {
   if (userObj.dob) {
     userObj.dob = new Date(userObj.dob).toDateString();
   }
-  const userId = req.params.userId;
+  const userId = req.user._id;
 
   const newUser = await User.findByIdAndUpdate(userId, userObj, { new: true });
   return res.status(200).json({
@@ -226,7 +226,7 @@ module.exports.testIsTokenSave = catchAsync(async (req, res, next) => {
 
 module.exports.changePassword = catchAsync(async (req, res, next) => {
   const newPasword = req.body.newPassword;
-  const userId = req.params.userId;
+  const userId = req.user._id;
 
   const newHashPassword = await hashPassword(newPasword);
 
@@ -299,7 +299,7 @@ module.exports.getUserBookingHistory = catchAsync(async (req, res, next) => {
       { path: "hotelId", select: "hotelId hotelName" },
       // { path: "roomId", select: "bedType" },
     ])
-    .select("-userId -updatedAt")
+    .select("-user -updatedAt")
     .sort({ createdAt: 1 });
   return res.status(200).json({
     bookingHistory,
