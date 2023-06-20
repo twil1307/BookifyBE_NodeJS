@@ -45,6 +45,8 @@ router.post("/verifyjwt", userController.verifyJwtToken);
 // login
 router.post("/login", formDataRetrieve.none(), userController.logIn);
 
+router.post("/logout", formDataRetrieve.none(), userController.logOut);
+
 // refresh new access and refresh token after access token expired
 router.post("/refresh", userController.refreshNewTokens);
 

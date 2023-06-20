@@ -224,6 +224,12 @@ module.exports.testIsTokenSave = catchAsync(async (req, res, next) => {
     });
 });
 
+module.exports.logOut = catchAsync(async (req, res, next) => {
+  res.setHeader("Set-Cookie", expireTokens);
+
+  return res.status(200).json({ message: "Log out successfully" });
+});
+
 module.exports.changePassword = catchAsync(async (req, res, next) => {
   const newPasword = req.body.newPassword;
   const userId = req.user._id;

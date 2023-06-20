@@ -126,10 +126,9 @@ const getDashboardExchangeMonthly = catchAsync(async (req, res, next) => {
 
 const getDashboardIncomeHistory = async (bookingData) => {
   const data = bookingData.map((booking) => ({
-    username:
-      !booking.user.subName || !booking.user.name
-        ? booking.user.username
-        : `${booking.user.subName} ${booking.user.name}`,
+    username: booking.user.username,
+    subName: booking.user.subName,
+    name: booking.user.name,
     userId: booking.user._id,
     createdAt: booking.createdAt,
     price: booking.price,
@@ -180,6 +179,44 @@ const getDashboardIncomeMonthly = async (bookingData) => {
   }, {});
 
   return { monthlyData, total };
+};
+
+const getDashboardExchangeYearly = catchAsync(async (req, res, next) => {
+  // if there is month, server will return the a specific month data
+  const bookingData = await Booking.find({}).select("createdAt price");
+
+  console.log(bookingData);
+
+  const { yearlyData, total } = await getDashboardIncomeYearly(bookingData);
+
+  return res.status(200).json({
+    income: yearlyData,
+    total: total,
+  });
+});
+
+const getDashboardIncomeYearly = async (bookingData) => {
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  let total = 0;
+  const yearlyData = {};
+
+  for (let i = currentYear; i >= currentYear - 9; i--) {
+    yearlyData[i] = 0;
+  }
+
+  bookingData.reduce((accumulator, item) => {
+    const date = new Date(item.createdAt);
+    const year = date.getFullYear() + "";
+
+    yearlyData[year] += item.price;
+
+    total += item.price;
+
+    return accumulator;
+  }, {});
+
+  return { yearlyData, total };
 };
 
 const getHotelRating = catchAsync(async (req, res, next) => {
@@ -571,4 +608,5 @@ module.exports = {
   getNumberOfUserRegisteredByMonth,
   getReportData,
   getDashboardExchangeMonthly,
+  getDashboardExchangeYearly,
 };

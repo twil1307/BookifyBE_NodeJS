@@ -14,16 +14,26 @@ const {
   getNumberOfUserRegisteredByMonth,
   getReportData,
   getDashboardExchangeMonthly,
+  getDashboardExchangeYearly,
 } = require("../service/dashBoardService");
 
 // Get all hotel for dashboard (To enable hotel (?))
 module.exports.getAllHotelsDashBoard = catchAsync(async (req, res, next) => {
   const hotels = await Hotel.find({})
     .populate({ path: "user", select: "_id subName name" })
-    .select("hotelName createdAt user");
+    .select("hotelName createdAt user isVerified");
 
   return res.status(200).json({
     hotels: hotels,
+  });
+});
+
+module.exports.verifyHotel = catchAsync(async (req, res, next) => {
+  const hotelId = req.params.hotelId;
+  await Hotel.findByIdAndUpdate(hotelId, { $set: { isVerified: true } });
+
+  return res.status(200).json({
+    message: "Verify hotel successfully",
   });
 });
 
@@ -250,10 +260,13 @@ module.exports.getDashBoardExchangeInfo = catchAsync(async (req, res, next) => {
       getDashboardExchangeMonthly(req, res, next);
       break;
 
+    case "year":
+      getDashboardExchangeYearly(req, res, next);
+      break;
+
     default:
       return res.status(404).json({
         message: `Type ${type} not supported`,
       });
-      break;
   }
 });
