@@ -43,21 +43,27 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
             {
               $and: [
                 { checkin: { $lte: bookingRequest.checkin } },
-                { checkout: { $gte: bookingRequest.checkin } },
-              ],
-            },
-            {
-              $and: [
-                { checkin: { $lt: bookingRequest.checkin } },
-                { checkout: { $gte: bookingRequest.checkout } },
-              ],
-            },
+                { checkout: { $gte: bookingRequest.checkout } }
+              ]
+            }, 
             {
               $and: [
                 { checkin: { $lte: bookingRequest.checkin } },
-                { checkout: { $gte: bookingRequest.checkout } },
-              ],
+                { checkout: { $lt: bookingRequest.checkout, $gt: bookingRequest.checkin } }
+              ]
             },
+            {
+              $and: [
+                { checkin: { $lt: bookingRequest.checkout, $gt: bookingRequest.checkin } },
+                { checkout: { $gte: bookingRequest.checkout } }
+              ]
+            },
+            {
+              $and: [
+                { checkin: { $gt: bookingRequest.checkin } },
+                { checkout: { $lt: bookingRequest.checkout } }
+              ]
+            }
           ],
         },
         {
@@ -65,6 +71,8 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
         },
       ],
     });
+
+    console.log(bookingCheck)
 
     bookingRequest.userId = req.user._id;
 
