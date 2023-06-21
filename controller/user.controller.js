@@ -110,6 +110,7 @@ module.exports.logIn = catchAsync(async (req, res, next) => {
             role: user.role,
             username: user.username,
             displayName: `${user.subName} ${user.name}`,
+            hotelBookmarked: user.hotelBookmarked,
           },
         });
     }
@@ -201,7 +202,7 @@ module.exports.verifyJwtToken = catchAsync(async (req, res, next) => {
   const result = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
   const userData = await User.findOne({ _id: result._id }).select(
-    "_id username name subName avatar"
+    "_id username name subName avatar hotelBookmarked"
   );
 
   return res.status(202).json({
