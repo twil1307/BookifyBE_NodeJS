@@ -40,37 +40,27 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
             {
               $and: [
                 { checkin: { $lte: bookingRequest.checkin } },
-                { checkout: { $gte: bookingRequest.checkout } },
-              ],
-            },
+                { checkout: { $gte: bookingRequest.checkout } }
+              ]
+            }, 
             {
               $and: [
                 { checkin: { $lte: bookingRequest.checkin } },
-                {
-                  checkout: {
-                    $lt: bookingRequest.checkout,
-                    $gt: bookingRequest.checkin,
-                  },
-                },
-              ],
+                { checkout: { $lt: bookingRequest.checkout, $gt: bookingRequest.checkin } }
+              ]
             },
             {
               $and: [
-                {
-                  checkin: {
-                    $lt: bookingRequest.checkout,
-                    $gt: bookingRequest.checkin,
-                  },
-                },
-                { checkout: { $gte: bookingRequest.checkout } },
-              ],
+                { checkin: { $lt: bookingRequest.checkout, $gt: bookingRequest.checkin } },
+                { checkout: { $gte: bookingRequest.checkout } }
+              ]
             },
             {
               $and: [
                 { checkin: { $gt: bookingRequest.checkin } },
-                { checkout: { $lt: bookingRequest.checkout } },
-              ],
-            },
+                { checkout: { $lt: bookingRequest.checkout } }
+              ]
+            }
           ],
         },
         {
@@ -79,9 +69,9 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
       ],
     });
 
-    console.log(bookingCheck);
+    console.log(bookingCheck)
 
-    bookingRequest.user = req.user._id;
+    bookingRequest.userId = req.user._id;
 
     // Compare 2 array
     // Check if rooms id is equal to the rooms of overlap day, if equals => all the rooms in the date range are booked
