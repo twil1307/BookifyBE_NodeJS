@@ -177,7 +177,7 @@ Date.prototype.addDays = function (days) {
 module.exports.getAllHotels = catchAsync(async (req, res, next) => {
   // Get all hotels
   const hotels = await Hotel.find({ isVerified: "true" }).select(
-    "hotelName country district address averagePrice rating images"
+    "hotelName country district address rating images roomType"
   );
 
   // Randomly select 3 images for each hotel
@@ -185,7 +185,13 @@ module.exports.getAllHotels = catchAsync(async (req, res, next) => {
     const randomImages = hotel.images
       .sort(() => 0.5 - Math.random()) // sort images array by an random way
       .slice(0, 3);
-    return { ...hotel._doc, images: randomImages };
+    const { roomType, ...hotelData } = hotel._doc;
+
+    return {
+      ...hotelData,
+      averagePrice: roomType.roomPrice,
+      images: randomImages,
+    };
   });
 
   if (hotels) {
