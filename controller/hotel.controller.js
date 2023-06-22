@@ -1,5 +1,6 @@
 const Hotel = require("../models/Hotel");
 const HotelType = require("../models/HotelType");
+const Booking = require("../models/Booking");
 const Review = require("../models/Review");
 const Reports = require("../models/Report");
 
@@ -273,6 +274,32 @@ module.exports.deleteHotel = catchAsync(async (req, res, next) => {
   });
 });
 
+module.exports.test = catchAsync(async (req, res, next) => {
+  console.log(req.files);
+
+  return res.json("Hello");
+});
+
+module.exports.checkIsUserEverStayHere = catchAsync(async (req, res, next) => {
+  const userId = req.user._id;
+  const hotelId = req.params.hotelId;
+
+  const userBooking = await Booking.find({
+    user: userId,
+    hotelId: hotelId,
+  });
+
+  if (userBooking && userBooking.length > 0) {
+    return res.status(200).json({
+      message: "User stayed here",
+    });
+  } else {
+    return res.status(405).json({
+      message: "You have'nt stayed here before",
+    });
+  }
+});
+
 module.exports.updateHotel = catchAsync(async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -280,7 +307,7 @@ module.exports.updateHotel = catchAsync(async (req, res, next) => {
   try {
     const hotelIdUpdate = req.params.hotelId;
 
-    // Get image paths only for backgroundImage
+    // Get image paths only for backgroundImage`
 
     // Khi gui 1 list array image moi ve server (bao gom nhung cai moi va cu) xu li the nao
     const { backgroundImage, hotelImages, viewImages } =

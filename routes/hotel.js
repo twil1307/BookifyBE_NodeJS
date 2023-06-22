@@ -11,6 +11,8 @@ const { isUserEverStayHere } = require("../middleware/reviewQualify");
 const Roles = require("../enum/Role");
 const { countPageViews } = require("../middleware/pageViewMiddleware");
 
+router.post("/test", hotelController.test);
+
 // Create new hotel with role admin
 router.post(
   "/",
@@ -77,6 +79,12 @@ router.post(
   jwtMiddleware,
   isUserEverStayHere,
   hotelController.reportHotel
+);
+
+router.get(
+  "/:hotelId/isUserEverStayHere",
+  jwtMiddleware,
+  hotelController.checkIsUserEverStayHere
 );
 
 module.exports = router;

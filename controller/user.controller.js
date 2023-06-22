@@ -5,6 +5,11 @@ const {
   generateRefreshToken,
   expireTokens,
 } = require("../service/jwtService");
+const {
+  getUserBookingHistoryTypeAll,
+  getUserBookingHistoryTypeToday,
+  getUserBookingHistoryTypeBooked,
+} = require("../service/userService");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const AppError = require("../utils/appError");
@@ -301,14 +306,24 @@ module.exports.getUserRemainingAmount = catchAsync(async (req, res, next) => {
 });
 
 module.exports.getUserBookingHistory = catchAsync(async (req, res, next) => {
-  const bookingHistory = await Booking.find({})
-    .populate([
-      { path: "hotelId", select: "hotelId hotelName" },
-      // { path: "roomId", select: "bedType" },
-    ])
-    .select("-user -updatedAt")
-    .sort({ createdAt: 1 });
-  return res.status(200).json({
-    bookingHistory,
-  });
+  const type = req.query.type;
+
+  switch (type) {
+    case "all":
+      getUserBookingHistoryTypeAll(req, res, next);
+      break;
+    case "today":
+      getUserBookingHistoryTypeToday(req, res, next);
+      break;
+    case "booked":
+      getUserBookingHistoryTypeBooked(req, res, next);
+      break;
+    case "canceled":
+      break;
+
+    default:
+      return res.status(400).json({
+        message: `Invalid request, type all, today, booked, canceled is accepted only`,
+      });
+  }
 });
