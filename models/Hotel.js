@@ -144,6 +144,7 @@ const hotelSchema = new Schema(
           imagePath: { type: String, required: true },
           imageType: { type: Number, required: true },
         },
+        required: true,
       },
     ],
     reviews: {

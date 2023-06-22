@@ -5,6 +5,11 @@ const {
   generateRefreshToken,
   expireTokens,
 } = require("../service/jwtService");
+const {
+  getUserBookingHistoryTypeAll,
+  getUserBookingHistoryTypeToday,
+  getUserBookingHistoryTypeBooked,
+} = require("../service/userService");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const AppError = require("../utils/appError");
@@ -110,6 +115,7 @@ module.exports.logIn = catchAsync(async (req, res, next) => {
             role: user.role,
             username: user.username,
             displayName: `${user.subName} ${user.name}`,
+            hotelBookmarked: user.hotelBookmarked,
           },
         });
     }
@@ -201,7 +207,7 @@ module.exports.verifyJwtToken = catchAsync(async (req, res, next) => {
   const result = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
   const userData = await User.findOne({ _id: result._id }).select(
-    "_id username name subName avatar"
+    "_id username name subName avatar hotelBookmarked"
   );
 
   return res.status(202).json({
@@ -300,14 +306,24 @@ module.exports.getUserRemainingAmount = catchAsync(async (req, res, next) => {
 });
 
 module.exports.getUserBookingHistory = catchAsync(async (req, res, next) => {
-  const bookingHistory = await Booking.find({})
-    .populate([
-      { path: "hotelId", select: "hotelId hotelName" },
-      // { path: "roomId", select: "bedType" },
-    ])
-    .select("-user -updatedAt")
-    .sort({ createdAt: 1 });
-  return res.status(200).json({
-    bookingHistory,
-  });
+  const type = req.query.type;
+
+  switch (type) {
+    case "all":
+      getUserBookingHistoryTypeAll(req, res, next);
+      break;
+    case "today":
+      getUserBookingHistoryTypeToday(req, res, next);
+      break;
+    case "booked":
+      getUserBookingHistoryTypeBooked(req, res, next);
+      break;
+    case "canceled":
+      break;
+
+    default:
+      return res.status(400).json({
+        message: `Invalid request, type all, today, booked, canceled is accepted only`,
+      });
+  }
 });

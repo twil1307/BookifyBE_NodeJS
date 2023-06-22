@@ -7,6 +7,8 @@
 var app = require('../app');
 var debug = require('debug')('slot4:server');
 var http = require('http');
+const { WebSocketServer, WebSocket } = require("ws");
+let ID_GENERATOR = 1;
 
 /**
  * Get port from environment and store in Express.
@@ -20,12 +22,33 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
+const wss = new WebSocketServer({ noServer: true });
+
+wss.on('connection', (ws, request) => {
+
+    //connection is up, let's add a simple simple event
+    ws.on('message', (message) => {
+        //log the received message and send it back to the client
+        console.log('received: %s', message);
+        wss.clients.forEach(client => {
+            if (client !== ws && client.readyState === WebSocket.OPEN) {
+                console.log(client.id)
+                client.send(`ID ${client.id}, ${message}`)
+            }
+        })
+
+    });
+
+    //send immediatly a feedback to the incoming connection    
+    ws.send('Hi there, I am a WebSocket server');
+});
+
 
 /**
  * Listen on provided port, on all network interfaces.
  */
 
-app.listen(port, process.env.DEV_HOSTNAME, () => {
+server.listen(port, process.env.DEV_HOSTNAME, () => {
     console.log(
         `Server running at http://${process.env.DEV_HOSTNAME}:${port}`
     );
@@ -33,10 +56,11 @@ app.listen(port, process.env.DEV_HOSTNAME, () => {
 
 server.on('error', onError);
 server.on('listening', onListening);
+server.on('upgrade', onUpgrading);
 
 /**
- * Normalize a port into a number, string, or false.
- */
+*
+Normalize a port into a number, string, or false.*/
 
 function normalizePort(val) {
     var port = parseInt(val, 10);
@@ -57,6 +81,14 @@ function normalizePort(val) {
 /**
  * Event listener for HTTP server "error" event.
  */
+
+function onUpgrading(req, socket, head) {
+    wss.handleUpgrade(req, socket, head, (ws) => {
+        ws.id = ID_GENERATOR
+        ID_GENERATOR++;
+        wss.emit('connection', ws, req)
+    })
+}
 
 function onError(error) {
     if (error.syscall !== 'listen') {
