@@ -53,7 +53,7 @@ module.exports.updateUser = catchAsync(async (req, res, next) => {
   if (userObj.dob) {
     userObj.dob = new Date(userObj.dob).toDateString();
   }
-  const userId = req.params.userId;
+  const userId = req.user._id;
 
   const newUser = await User.findByIdAndUpdate(userId, userObj, { new: true });
   return res.status(200).json({
@@ -190,6 +190,12 @@ module.exports.verifyJwtToken = catchAsync(async (req, res, next) => {
   // Hash user password
   const { accessToken } = req.cookies;
 
+  if (!accessToken) {
+    return res.status(401).json({
+      message: "Login required",
+    });
+  }
+
   const token = accessToken.replace("Bearer ", "");
 
   const result = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
@@ -218,9 +224,15 @@ module.exports.testIsTokenSave = catchAsync(async (req, res, next) => {
     });
 });
 
+module.exports.logOut = catchAsync(async (req, res, next) => {
+  res.setHeader("Set-Cookie", expireTokens);
+
+  return res.status(200).json({ message: "Log out successfully" });
+});
+
 module.exports.changePassword = catchAsync(async (req, res, next) => {
   const newPasword = req.body.newPassword;
-  const userId = req.params.userId;
+  const userId = req.user._id;
 
   const newHashPassword = await hashPassword(newPasword);
 
@@ -293,7 +305,7 @@ module.exports.getUserBookingHistory = catchAsync(async (req, res, next) => {
       { path: "hotelId", select: "hotelId hotelName" },
       // { path: "roomId", select: "bedType" },
     ])
-    .select("-userId -updatedAt")
+    .select("-user -updatedAt")
     .sort({ createdAt: 1 });
   return res.status(200).json({
     bookingHistory,

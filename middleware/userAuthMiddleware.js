@@ -35,13 +35,14 @@ const isExactHost = catchAsync(async (req, res, next) => {
 
   const hotel = await Hotel.findById(hotelId);
 
-  console.log(userId);
-  console.log(hotel.userId);
+  if (!hotel) {
+    return res.status(404).json({ error: "Hotel not found" });
+  }
 
-  if (!userId.equals(hotel.userId)) {
+  if (!userId.equals(hotel.user)) {
     return res
       .status(401)
-      .json({ error: "You are not authorized to access this update" });
+      .json({ error: "You are not authorized to access this" });
   } else {
     next();
   }

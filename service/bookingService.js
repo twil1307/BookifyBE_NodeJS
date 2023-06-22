@@ -1,8 +1,8 @@
-const RoomType = require("../models/RoomType");
+const Room = require("../models/Room");
 const Booking = require("../models/Booking");
 
 const getUnavailableDateRanges = async (hotelId) => {
-  const rooms = await RoomType.find({ hotelId }).select("_id").lean();
+  const rooms = await Room.find({ hotelId }).select("_id").lean();
 
   const roomIds = rooms.map((room) => room._id.toString());
 
@@ -13,6 +13,8 @@ const getUnavailableDateRanges = async (hotelId) => {
     checkin: { $gt: yesterday },
     hotelId: hotelId,
   });
+
+  console.log(bookings);
 
   if (bookings.length == 0) {
     return [];

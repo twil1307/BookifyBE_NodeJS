@@ -1,5 +1,6 @@
 const Amenity = require("../models/Amenity");
 const RoomType = require("../models/RoomType");
+const Room = require("../models/Room");
 const Hotel = require("../models/Hotel");
 require("dotenv").config();
 
@@ -47,13 +48,22 @@ const addNewAmenityNotExisted = async (newAmenities, session) => {
   return Object.values(listId.insertedIds);
 };
 
-const addNewRoomType = async (listRoomType, session) => {
-  const listId = await RoomType.insertMany(listRoomType, {
+const addNewRooms = async (hotelId, roomNum, session) => {
+  const roomObjData = {
+    hotelId: hotelId,
+  };
+
+  // add new roomtype
+  const roomsData = Array.from({ length: roomNum }, () => {
+    return roomObjData;
+  });
+
+  const listRoomId = await Room.insertMany(roomsData, {
     rawResult: true,
     session,
   });
 
-  return Object.values(listId.insertedIds);
+  return Object.values(listRoomId.insertedIds);
 };
 
 const retrieveNewHotelImage = (req) => {
@@ -103,15 +113,17 @@ const retrieveNewHotelImagePath = (req) => {
 };
 
 // Get average point for a specific hotel
-const getAveragePoint = async (hotelId) => {
-  const listReviews = await Hotel.findById(hotelId)
-    .select("reviews")
-    .populate(
-      "reviews",
-      "communicationPoint accuracyPoint locationPoint valuePoint -_id"
-    );
+const getAveragePoint = async (reviews) => {
+  const extractedArray = reviews.map((obj) => {
+    return {
+      communicationPoint: obj.communicationPoint,
+      accuracyPoint: obj.accuracyPoint,
+      locationPoint: obj.locationPoint,
+      valuePoint: obj.valuePoint,
+    };
+  });
 
-  return calculateAveragePoints(listReviews.reviews);
+  return calculateAveragePoints(extractedArray);
 };
 
 const calculateAveragePoints = (reviews) => {
@@ -155,7 +167,7 @@ module.exports = {
   getAmenitiesInsertNotDuplicate,
   getListAmenityDuplicatedId,
   addNewAmenityNotExisted,
-  addNewRoomType,
+  addNewRooms,
   retrieveNewHotelImage,
   retrieveNewHotelImagePath,
   getAveragePoint,

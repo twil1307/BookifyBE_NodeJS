@@ -1,12 +1,13 @@
 const catchAsync = require("../utils/catchAsync");
 const Booking = require("../models/Booking");
+const Hotel = require("../models/Hotel");
 
 const isUserEverStayHere = catchAsync(async (req, res, next) => {
   const userId = req.user._id;
   const hotelId = req.params.hotelId;
 
   const userBooking = await Booking.find({
-    userId: userId,
+    user: userId,
     hotelId: hotelId,
   });
 
@@ -27,4 +28,21 @@ const isUserEverStayHere = catchAsync(async (req, res, next) => {
   }
 });
 
-module.exports = { isUserEverStayHere };
+const isExactHotelHost = catchAsync(async (req, res, next) => {
+  const userId = req.user._id;
+  const hotelId = req.query.hotelId;
+
+  const hotelOwnerId = await Hotel.findById(hotelId).select("user -_id");
+
+  console.log(hotelOwnerId);
+
+  if (!userId.equals(hotelOwnerId)) {
+    return res.status(401).json({
+      message: "You are not authorized",
+    });
+  } else {
+    next();
+  }
+});
+
+module.exports = { isUserEverStayHere, isExactHotelHost };

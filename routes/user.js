@@ -33,9 +33,8 @@ router.post("/", formDataRetrieve.none(), userController.signUpUser);
 
 // update user info
 router.put(
-  "/:userId",
+  "/",
   jwtMiddleware,
-  isExactUser,
   userImageUploaderLocal.single("avatar"),
   userController.updateUser
 );
@@ -46,23 +45,23 @@ router.post("/verifyjwt", userController.verifyJwtToken);
 // login
 router.post("/login", formDataRetrieve.none(), userController.logIn);
 
+router.post("/logout", formDataRetrieve.none(), userController.logOut);
+
 // refresh new access and refresh token after access token expired
 router.post("/refresh", userController.refreshNewTokens);
 
 // compare password
-router.put(
-  "/compareCurrentPassword/:userId",
+router.post(
+  "/compareCurrentPassword",
   jwtMiddleware,
-  isExactUser,
   formDataRetrieve.none(),
   userController.compareCurrentPassword
 );
 
 // change password
 router.put(
-  "/changePassword/:userId",
+  "/changePassword",
   jwtMiddleware,
-  isExactUser,
   formDataRetrieve.none(),
   userController.changePassword
 );

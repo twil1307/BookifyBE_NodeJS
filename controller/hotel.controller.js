@@ -2,7 +2,8 @@ const Hotel = require("../models/Hotel");
 const HotelType = require("../models/HotelType");
 const Review = require("../models/Review");
 const Booking = require("../models/Booking");
-const Room = require("../models/RoomType");
+const Room = require("../models/Room");
+const Reports = require("../models/Report");
 
 require("dotenv").config();
 const mongoose = require("mongoose");
@@ -185,6 +186,7 @@ Date.prototype.addDays = function (days) {
 };
 
 module.exports.getAllHotels = catchAsync(async (req, res, next) => {
+	const DEFAULT_PAGE_LIMIT = 10;
 	// Get all hotels
 	const findHotelQuery = Object.keys(req.query).reduce(
 		(acc, key) => {
@@ -197,7 +199,7 @@ module.exports.getAllHotels = catchAsync(async (req, res, next) => {
 							return { [key]: condition };
 						}),
 					};
-				} else if (key === "checkIn" || key === "checkOut") {
+				} else if (key === "checkIn" || key === "checkOut" || key === 'page') {
 					return acc;
 				} else if (key === "roomType.maxGuest") {
 					return {
@@ -216,21 +218,26 @@ module.exports.getAllHotels = catchAsync(async (req, res, next) => {
 
 			return acc;
 		},
-		{ isVerified: "true" }
+		{ 
+			isVerified: "true",
+			skip: req.query.index * DEFAULT_PAGE_LIMIT,
+			limit: DEFAULT_PAGE_LIMIT
+		}
 	);
 
 	console.log(findHotelQuery);
 
 	let hotels = await Hotel.find(findHotelQuery)
+		.sort({ createdAt: 'desc' })
 		.select(
 			"_id hotelName country district address averagePrice rating images"
 		)
 		.populate({ path: "hotelAmenities" });
 
 	const { checkIn, checkOut } = req.query;
-	
+
 	if (checkIn && checkOut) {
-		console.log(checkIn, checkOut)
+		console.log(checkIn, checkOut);
 		const filtered = await Promise.all(
 			hotels.map((hotel) =>
 				getHotelsStatusWithCheckInAndCheckOut(
@@ -264,11 +271,13 @@ const getHotelsStatusWithCheckInAndCheckOut = async (
 	checkIn,
 	checkOut
 ) => {
-	const hotelRoomIds = await Room.find({
+	const rooms = await Room.find({
 		hotelId: hotel._id,
 	})
 		.select("_id")
 		.sort({ _id: 1 });
+	
+	const roomId = rooms.map(({ _id }) => _id);
 
 	// Filter out _id only
 	// Get all (distinct) the rooms Ids which is overlapped in the check in and check out date range
@@ -307,9 +316,10 @@ const getHotelsStatusWithCheckInAndCheckOut = async (
 			},
 		],
 	});
-	console.log(bookingCheck, hotelRoomIds);
 
-	return JSON.stringify(bookingCheck) === JSON.stringify(hotelRoomIds);
+	console.log(bookingCheck, roomId)
+
+	return JSON.stringify(bookingCheck) === JSON.stringify(roomId);
 };
 
 module.exports.reviewHotel = catchAsync(async (req, res, next) => {
@@ -327,9 +337,34 @@ module.exports.reviewHotel = catchAsync(async (req, res, next) => {
 
 		hotel.reviews.push(reviewObj._id);
 
-		await hotel.save();
+		const hotel = await Hotel.findById(req.params.hotelId);
+		if (hotel) {
+			await reviewObj.save();
 
-		return res.status(200).json({ message: "Review successfully" });
+			hotel.reviews.push(reviewObj._id);
+
+			await hotel.save();
+
+			return res.status(200).json({ message: "Review successfully" });
+		} else {
+			return next(new AppError("Hotels not found", 404));
+		}
+	}
+});
+
+module.exports.reportHotel = catchAsync(async (req, res, next) => {
+	// Can use another way call "Using bulk write operations"
+	const reportObj = new Reports(req.body);
+	reportObj.hotelId = req.params.hotelId;
+	reportObj.user = req.user._id;
+
+	const hotel = await Hotel.findById(req.params.hotelId);
+	if (hotel) {
+		await reportObj.save();
+
+		return res
+			.status(200)
+			.json({ message: "Your report has been sent successfully" });
 	} else {
 		return next(new AppError("Hotels not found", 404));
 	}
