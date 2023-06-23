@@ -9,7 +9,10 @@ const AppError = require("../utils/appError");
 const getUserBookingHistoryTypeAll = catchAsync(async (req, res, next) => {
   const bookingHistory = await Booking.find({})
     .populate([
-      { path: "hotelId", select: "hotelId hotelName" },
+      {
+        path: "hotelId",
+        select: "hotelId hotelName address district city country",
+      },
       // { path: "roomId", select: "bedType" },
     ])
     .select("-user -updatedAt")
@@ -35,7 +38,10 @@ const getUserBookingHistoryTypeToday = catchAsync(async (req, res, next) => {
     ],
   })
     .populate([
-      { path: "hotelId", select: "hotelId hotelName" },
+      {
+        path: "hotelId",
+        select: "hotelId hotelName address district city country",
+      },
       // { path: "roomId", select: "bedType" },
     ])
     .select("-user -updatedAt")
@@ -53,7 +59,10 @@ const getUserBookingHistoryTypeBooked = catchAsync(async (req, res, next) => {
     $and: [{ checkout: { $lt: currentDate } }, { user: req.user._id }],
   })
     .populate([
-      { path: "hotelId", select: "hotelId hotelName" },
+      {
+        path: "hotelId",
+        select: "hotelId hotelName address district city country",
+      },
       // { path: "roomId", select: "bedType" },
     ])
     .select("-user -updatedAt")
@@ -75,7 +84,10 @@ const getUserBookingHistoryTypeCanceled = catchAsync(async (req, res, next) => {
     ],
   })
     .populate([
-      { path: "hotelId", select: "hotelId hotelName" },
+      {
+        path: "hotelId",
+        select: "hotelId hotelName address district city country",
+      },
       // { path: "roomId", select: "bedType" },
     ])
     .select("-user -updatedAt")

@@ -222,8 +222,6 @@ module.exports.getAllHotels = catchAsync(async (req, res, next) => {
     .skip(req.query.index * DEFAULT_PAGE_LIMIT)
     .limit(DEFAULT_PAGE_LIMIT);
 
-  console.log(hotels);
-
   const { checkIn, checkOut } = req.query;
 
   if (checkIn && checkOut) {
@@ -237,7 +235,6 @@ module.exports.getAllHotels = catchAsync(async (req, res, next) => {
         )
       )
     );
-    console.log(filtered);
     hotels = hotels.filter((_, index) => !filtered[index]);
   }
 
@@ -248,12 +245,22 @@ module.exports.getAllHotels = catchAsync(async (req, res, next) => {
       .slice(0, 3);
     const { roomType, ...hotelData } = hotel._doc;
 
+    if (req.user && req.user.hotelBookmarked.includes(hotel._id)) {
+      hotelData.isBookmarked = true;
+    } else {
+      hotelData.isBookmarked = false;
+    }
+
     return {
       ...hotelData,
       averagePrice: roomType.roomPrice,
       images: randomImages,
     };
   });
+
+  if (!req.user) {
+    hotelsWithRandomImages.message = "Login for better experience";
+  }
 
   if (hotels) {
     return res.status(200).json({ hotels: hotelsWithRandomImages });
