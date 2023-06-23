@@ -64,8 +64,31 @@ const getUserBookingHistoryTypeBooked = catchAsync(async (req, res, next) => {
   });
 });
 
+const getUserBookingHistoryTypeCanceled = catchAsync(async (req, res, next) => {
+  const currentDate = new Date();
+
+  const bookingHistory = await Booking.find({
+    $and: [
+      { checkout: { $lt: currentDate } },
+      { user: req.user._id },
+      { status: false },
+    ],
+  })
+    .populate([
+      { path: "hotelId", select: "hotelId hotelName" },
+      // { path: "roomId", select: "bedType" },
+    ])
+    .select("-user -updatedAt")
+    .sort({ createdAt: 1 });
+
+  return res.status(200).json({
+    booking: bookingHistory,
+  });
+});
+
 module.exports = {
   getUserBookingHistoryTypeAll,
   getUserBookingHistoryTypeToday,
   getUserBookingHistoryTypeBooked,
+  getUserBookingHistoryTypeCanceled,
 };

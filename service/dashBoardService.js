@@ -242,7 +242,7 @@ const getHotelRating = catchAsync(async (req, res, next) => {
   console.log(reviewsList);
 
   return res.status(200).json({
-    reviews: reviewsList,
+    ratings: reviewsList,
   });
 });
 

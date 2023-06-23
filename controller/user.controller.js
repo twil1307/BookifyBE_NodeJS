@@ -9,6 +9,7 @@ const {
   getUserBookingHistoryTypeAll,
   getUserBookingHistoryTypeToday,
   getUserBookingHistoryTypeBooked,
+  getUserBookingHistoryTypeCanceled,
 } = require("../service/userService");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
@@ -319,6 +320,7 @@ module.exports.getUserBookingHistory = catchAsync(async (req, res, next) => {
       getUserBookingHistoryTypeBooked(req, res, next);
       break;
     case "canceled":
+      getUserBookingHistoryTypeCanceled(req, res, next);
       break;
 
     default:
