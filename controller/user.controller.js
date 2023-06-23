@@ -5,12 +5,19 @@ const {
   generateRefreshToken,
   expireTokens,
 } = require("../service/jwtService");
+const {
+  getUserBookingHistoryTypeAll,
+  getUserBookingHistoryTypeToday,
+  getUserBookingHistoryTypeBooked,
+  getUserBookingHistoryTypeCanceled,
+} = require("../service/userService");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const BankingAccount = require("../models/BankingAccount");
 const Booking = require("../models/Booking");
+const Hotel = require("../models/Hotel");
 
 module.exports.getUser = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.params.userId).select("-password");
@@ -53,7 +60,7 @@ module.exports.updateUser = catchAsync(async (req, res, next) => {
   if (userObj.dob) {
     userObj.dob = new Date(userObj.dob).toDateString();
   }
-  const userId = req.params.userId;
+  const userId = req.user._id;
 
   const newUser = await User.findByIdAndUpdate(userId, userObj, { new: true });
   return res.status(200).json({
@@ -84,6 +91,8 @@ module.exports.logIn = catchAsync(async (req, res, next) => {
 
   const user = await User.findOne({ username: userObj.username });
 
+  console.log(user);
+
   if (user) {
     const result = await comparePassword(userObj.password, user.password);
 
@@ -110,6 +119,7 @@ module.exports.logIn = catchAsync(async (req, res, next) => {
             role: user.role,
             username: user.username,
             displayName: `${user.subName} ${user.name}`,
+            hotelBookmarked: user.hotelBookmarked,
           },
         });
     }
@@ -124,7 +134,7 @@ module.exports.refreshNewTokens = (req, res, next) => {
   console.log(refreshToken);
 
   if (!refreshToken) {
-    return res.status(401).json({ error: "Login again" });
+    return res.status(401).json({ error: "Login required" });
   }
 
   const token = refreshToken.replace("Refresh ", "");
@@ -141,7 +151,7 @@ module.exports.refreshNewTokens = (req, res, next) => {
         if (user) {
           return user;
         } else {
-          return res.status(422).json({ error: "Token not verified 3" });
+          return res.status(422).json({ error: "User is not available" });
         }
       })
       .then((user) => {
@@ -200,13 +210,17 @@ module.exports.verifyJwtToken = catchAsync(async (req, res, next) => {
 
   const result = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-  const userData = await User.findOne({ _id: result._id }).select(
-    "_id username name subName avatar"
-  );
+  const userData = await User.findOne({ _id: result._id });
 
-  return res.status(202).json({
-    user: userData,
-  });
+  if (userData) {
+    return res.status(202).json({
+      message: "User already login",
+    });
+  } else {
+    return res.status(405).json({
+      message: "User has not login yet",
+    });
+  }
 });
 
 module.exports.testIsTokenSave = catchAsync(async (req, res, next) => {
@@ -224,9 +238,15 @@ module.exports.testIsTokenSave = catchAsync(async (req, res, next) => {
     });
 });
 
+module.exports.logOut = catchAsync(async (req, res, next) => {
+  res.setHeader("Set-Cookie", expireTokens);
+
+  return res.status(200).json({ message: "Log out successfully" });
+});
+
 module.exports.changePassword = catchAsync(async (req, res, next) => {
   const newPasword = req.body.newPassword;
-  const userId = req.params.userId;
+  const userId = req.user._id;
 
   const newHashPassword = await hashPassword(newPasword);
 
@@ -293,15 +313,47 @@ module.exports.getUserRemainingAmount = catchAsync(async (req, res, next) => {
   });
 });
 
-module.exports.getUserBookingHistory = catchAsync(async (req, res, next) => {
-  const bookingHistory = await Booking.find({})
-    .populate([
-      { path: "hotelId", select: "hotelId hotelName" },
-      // { path: "roomId", select: "bedType" },
-    ])
-    .select("-userId -updatedAt")
-    .sort({ createdAt: 1 });
-  return res.status(200).json({
-    bookingHistory,
+module.exports.getUserBookmarkedHotels = catchAsync(async (req, res, next) => {
+  const hotelBookmarkedId = req.user.hotelBookmarked;
+
+  const hotels = await Hotel.find({ _id: { $in: hotelBookmarkedId } }).select(
+    "_id hotelName country district address roomType rating backgroundImg"
+  );
+
+  const bookmarkHotels = hotels.map((hotel) => {
+    const { roomType, ...hotelData } = hotel._doc;
+
+    return {
+      ...hotelData,
+      averagePrice: roomType.roomPrice,
+    };
   });
+
+  return res.status(200).json({
+    bookmarkedHotel: bookmarkHotels,
+  });
+});
+
+module.exports.getUserBookingHistory = catchAsync(async (req, res, next) => {
+  const type = req.query.type;
+
+  switch (type) {
+    case "all":
+      getUserBookingHistoryTypeAll(req, res, next);
+      break;
+    case "today":
+      getUserBookingHistoryTypeToday(req, res, next);
+      break;
+    case "booked":
+      getUserBookingHistoryTypeBooked(req, res, next);
+      break;
+    case "canceled":
+      getUserBookingHistoryTypeCanceled(req, res, next);
+      break;
+
+    default:
+      return res.status(400).json({
+        message: `Invalid request, type all, today, booked, canceled is accepted only`,
+      });
+  }
 });

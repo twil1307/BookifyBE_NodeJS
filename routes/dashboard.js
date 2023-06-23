@@ -10,14 +10,6 @@ const {
 const { isExactHotelHost } = require("../middleware/reviewQualify");
 const Roles = require("../enum/Role");
 
-// get all hotel (admin?)
-router.get(
-  "/hotels",
-  jwtMiddleware,
-  hasRole(Roles.ADMIN),
-  dashboardController.getAllHotelsDashBoard
-);
-
 // get a hotel income per month (host)
 router.get(
   "/hotels/manage/income/:hotelId",
@@ -64,6 +56,21 @@ router.get(
   jwtMiddleware,
   hasRole(Roles.ADMIN),
   dashboardController.getDashBoardExchangeInfo
+);
+
+// get all hotel (admin?)
+router.get(
+  "/hotels",
+  jwtMiddleware,
+  hasRole(Roles.ADMIN),
+  dashboardController.getAllHotelsDashBoard
+);
+
+router.put(
+  "/hotels/verify/:hotelId",
+  jwtMiddleware,
+  hasRole(Roles.ADMIN),
+  dashboardController.verifyHotel
 );
 
 module.exports = router;

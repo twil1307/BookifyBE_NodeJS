@@ -1,9 +1,11 @@
 const Booking = require("../models/Booking");
 const Room = require("../models/Room");
+const Transact = require("../models/Transact");
 const Hotel = require("../models/Hotel");
 const BankingAccount = require("../models/BankingAccount");
 const catchAsync = require("../utils/catchAsync");
 const mongoose = require("mongoose");
+const AppError = require("../utils/appError");
 
 module.exports.bookingRoom = catchAsync(async (req, res, next) => {
   const session = await mongoose.startSession();
@@ -14,23 +16,11 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
     bookingRequest.checkin = new Date(req.body.checkin);
     bookingRequest.checkout = new Date(req.body.checkout);
 
-    // Get all room Ids
-    // - solution 1
-    // const hotelRoomIds2 = await Room.distinct("_id", {
-    //   hotelId: bookingRequest.hotelId,
-    // });
+    const hotelRoomIdsAndPrice = await Hotel.findById(bookingRequest.hotelId)
+      .select("Rooms roomType")
+      .sort({ _id: 1 });
 
-    // - solution 2
-    // Get both roomId and price
-    // const hotelRoomIdsAndPrice = await Room.find({
-    //   hotelId: bookingRequest.hotelId,
-    // })
-    //   .select("_id roomType")
-    //   .sort({ _id: 1 });
-
-    const hotelRoomIdsAndPrice = await Hotel.findById(
-      bookingRequest.hotelId
-    ).select("Rooms roomType");
+    console.log(hotelRoomIdsAndPrice);
 
     // Filter out _id only
     const hotelRoomIds = hotelRoomIdsAndPrice.Rooms;
@@ -50,26 +40,26 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
             {
               $and: [
                 { checkin: { $lte: bookingRequest.checkin } },
-                { checkout: { $gte: bookingRequest.checkout } },
-              ],
+                { checkout: { $gte: bookingRequest.checkout } }
+              ]
+            }, 
+            {
+              $and: [
+                { checkin: { $lte: bookingRequest.checkin } },
+                { checkout: { $lt: bookingRequest.checkout, $gt: bookingRequest.checkin } }
+              ]
+            },
+            {
+              $and: [
+                { checkin: { $lt: bookingRequest.checkout, $gt: bookingRequest.checkin } },
+                { checkout: { $gte: bookingRequest.checkout } }
+              ]
             },
             {
               $and: [
                 { checkin: { $gt: bookingRequest.checkin } },
-                { checkout: { $gte: bookingRequest.checkout } },
-              ],
-            },
-            {
-              $and: [
-                { checkin: { $lt: bookingRequest.checkin } },
-                { checkout: { $lte: bookingRequest.checkout } },
-              ],
-            },
-            {
-              $and: [
-                { checkin: { $gt: bookingRequest.checkin } },
-                { checkout: { $lt: bookingRequest.checkout } },
-              ],
+                { checkout: { $lt: bookingRequest.checkout } }
+              ]
             }
           ],
         },
@@ -79,7 +69,7 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
       ],
     });
 
-    console.log(bookingCheck);
+    console.log(bookingCheck)
 
     bookingRequest.userId = req.user._id;
 
@@ -102,18 +92,35 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
         bookingCheck.every((item) => item.toString() !== element.toString())
       );
 
-      console.log(roomAvailable);
+      // console.log(roomAvailable);
 
       // push the first room of the array for the booking request of guest
       bookingRequest.roomId = roomAvailable[0];
 
-      // save booking to db
-      await bookingRequest.save();
-
       // minus user money
+      const bankingAccount = await BankingAccount.findById(
+        req.user.bankingAccountNumber
+      );
+
+      if (bankingAccount.amount - bookingRequest.price < 0) {
+        throw new AppError("Your account doesn't have enough balance", 400);
+      }
+
       await BankingAccount.findByIdAndUpdate(req.user.bankingAccountNumber, {
         $inc: { amount: -bookingRequest.price },
       });
+
+      // const transact = new Transact({
+      //   ammount: bookingRequest.price,
+      //   hotelId: bookingRequest.hotelId,
+      //   user: bookingRequest.user,
+      // });
+
+      // // save transact history
+      // await transact.save();
+
+      // save booking to db
+      await bookingRequest.save();
 
       await session.commitTransaction();
       session.endSession();
@@ -124,8 +131,12 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
       });
     }
   } catch (error) {
+    console.log("Aborting booking request");
+
     await session.abortTransaction();
 
     session.endSession();
+
+    next(error);
   }
 });

@@ -2,7 +2,11 @@ var express = require("express");
 var router = express.Router();
 const hotelController = require("../controller/hotel.controller");
 const jwtMiddleware = require("../middleware/jwtMiddleware");
-const { hasRole, isExactHost } = require("../middleware/userAuthMiddleware");
+const {
+  hasRole,
+  isExactHost,
+  isUserAvailable,
+} = require("../middleware/userAuthMiddleware");
 const {
   hotelImageUploaderLocal,
   formDataRetrieve,
@@ -11,10 +15,14 @@ const { isUserEverStayHere } = require("../middleware/reviewQualify");
 const Roles = require("../enum/Role");
 const { countPageViews } = require("../middleware/pageViewMiddleware");
 
+<<<<<<< HEAD
 router.get("/test", (req, res, next) => {
   console.log(JSON.parse(req.query.p));  
   return res.json("Ok hup'");
 })
+=======
+router.post("/test", hotelController.test);
+>>>>>>> ad38791eadd2ea6dd43cf250020604973ecd60ba
 
 // Create new hotel with role admin
 router.post(
@@ -38,6 +46,11 @@ router.post(
   hotelController.signNewHotelType
 );
 
+router.get("/type", jwtMiddleware, hotelController.getHotelTypes);
+
+// get all hotel
+router.get("/", isUserAvailable, hotelController.getAllHotels);
+
 // Get specific hotel
 router.get("/:hotelId", countPageViews, hotelController.getHotel);
 
@@ -54,9 +67,6 @@ router.put(
   ]),
   hotelController.updateHotel
 );
-
-// get all hotel
-router.get("/", hotelController.getAllHotels);
 
 // delete hotel
 router.delete(
@@ -82,6 +92,12 @@ router.post(
   jwtMiddleware,
   isUserEverStayHere,
   hotelController.reportHotel
+);
+
+router.get(
+  "/:hotelId/isUserEverStayHere",
+  jwtMiddleware,
+  hotelController.checkIsUserEverStayHere
 );
 
 module.exports = router;

@@ -14,6 +14,8 @@ const getUnavailableDateRanges = async (hotelId) => {
     hotelId: hotelId,
   });
 
+  console.log(bookings);
+
   if (bookings.length == 0) {
     return [];
   }

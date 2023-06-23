@@ -1,6 +1,8 @@
 const Hotel = require("../models/Hotel");
 const HotelType = require("../models/HotelType");
+const Booking = require("../models/Booking");
 const Review = require("../models/Review");
+const Room = require("../models/Room");
 const Reports = require("../models/Report");
 
 require("dotenv").config();
@@ -10,13 +12,13 @@ const catchAsync = require("../utils/catchAsync");
 const fileDelete = require("../utils/fileDelete");
 const { getUnavailableDateRanges } = require("../service/bookingService");
 const {
-  getAmenitiesInsertNotDuplicate,
-  getListAmenityDuplicatedId,
-  addNewAmenityNotExisted,
-  addNewRooms,
-  retrieveNewHotelImage,
-  retrieveNewHotelImagePath,
-  getAveragePoint,
+	getAmenitiesInsertNotDuplicate,
+	getListAmenityDuplicatedId,
+	addNewAmenityNotExisted,
+	addNewRooms,
+	retrieveNewHotelImage,
+	retrieveNewHotelImagePath,
+	getAveragePoint,
 } = require("../service/hotelService");
 const RoomType = require("../models/RoomType");
 
@@ -39,19 +41,19 @@ module.exports.signNewHotel = async (req, res, next) => {
 			...rest,
 		};
 
-    const hotelAmenitySign = JSON.parse(
-      JSON.stringify(eval(req.body.amenities))
-    );
+		const hotelAmenitySign = JSON.parse(
+			JSON.stringify(eval(req.body.amenities))
+		);
 
-    // pushing data to Hotel missing data
-    hotelSign.user = req.user._id;
-    hotelSign.backgroundImg = backgroundImage;
-    hotelImages.forEach((element) => {
-      hotelSign.images.push(element);
-    });
-    viewImages.forEach((element) => {
-      hotelSign.images.push(element);
-    });
+		// pushing data to Hotel missing data
+		hotelSign.user = req.user._id;
+		hotelSign.backgroundImg = backgroundImage;
+		hotelImages.forEach((element) => {
+			hotelSign.images.push(element);
+		});
+		viewImages.forEach((element) => {
+			hotelSign.images.push(element);
+		});
 
 		// get new amenities which is not existed in the DB
 		const newAmenities = await getAmenitiesInsertNotDuplicate(
@@ -76,20 +78,20 @@ module.exports.signNewHotel = async (req, res, next) => {
 			...newAmenitiesId,
 		];
 
-    // add new room type
-    const newRoomTypeData = new RoomType(roomTypeSign);
-    const { _id, ...roomType } = newRoomTypeData;
+		// add new room type
+		const newRoomTypeData = new RoomType(roomTypeSign);
+		const { _id, ...roomType } = newRoomTypeData;
 
-    console.log(roomType);
+		console.log(roomType);
 
-    hotelSign.roomType = roomType;
+		hotelSign.roomType = roomType;
 
-    // add new room
-    const listRoomId = await addNewRooms(hotelSign._id, roomNum, session);
+		// add new room
+		const listRoomId = await addNewRooms(hotelSign._id, roomNum, session);
 
-    hotelSign.Rooms = [...listRoomId.flat()];
+		hotelSign.Rooms = [...listRoomId.flat()];
 
-    console.log(hotelSign);
+		console.log(hotelSign);
 
 		// Saving new hotel
 		const hotelSignComplete = await hotelSign.save();
@@ -124,10 +126,10 @@ module.exports.signNewHotel = async (req, res, next) => {
 };
 
 module.exports.signNewHotelType = async (req, res) => {
-  try {
-    console.log(req.body);
+	try {
+		console.log(req.body);
 
-    const hotelTypeSign = new HotelType(req.body);
+		const hotelTypeSign = new HotelType(req.body);
 
 		const newType = await hotelTypeSign.save();
 
@@ -151,28 +153,30 @@ module.exports.signNewHotelType = async (req, res) => {
 };
 
 module.exports.getHotel = catchAsync(async (req, res, next) => {
-  const hotel = await Hotel.findById(req.params.hotelId)
-    .populate("hotelType")
-    .populate({
-      path: "user",
-      select: "username subName name avatar",
-    })
-    .populate("hotelAmenities", "-createdAt -updatedAt")
-    .populate("roomType")
-    .populate("reviews")
-    .populate("rating");
+	const hotel = await Hotel.findById(req.params.hotelId)
+		.populate("hotelType")
+		.populate({
+			path: "user",
+			select: "username subName name avatar",
+		})
+		.populate("hotelAmenities", "-createdAt -updatedAt")
+		.populate("roomType")
+		.populate("reviews")
+		.populate("rating");
 
-  const data = await getAveragePoint(hotel.reviews);
+	const data = await getAveragePoint(hotel.reviews);
 
 	hotel.rating = data;
 
 	const bookedDate = await getUnavailableDateRanges(req.params.hotelId);
 
-  if (hotel) {
-    return res.status(200).json({ hotel: hotel, fullyBookedDates: bookedDate });
-  } else {
-    return next(new AppError("Hotel not found", 404));
-  }
+	if (hotel) {
+		return res
+			.status(200)
+			.json({ hotel: hotel, fullyBookedDates: bookedDate });
+	} else {
+		return next(new AppError("Hotel not found", 404));
+	}
 });
 
 Date.prototype.addDays = function (days) {
@@ -182,6 +186,7 @@ Date.prototype.addDays = function (days) {
 };
 
 module.exports.getAllHotels = catchAsync(async (req, res, next) => {
+	const DEFAULT_PAGE_LIMIT = 10;
 	// Get all hotels
 	const findHotelQuery = Object.keys(req.query).reduce(
 		(acc, key) => {
@@ -194,24 +199,57 @@ module.exports.getAllHotels = catchAsync(async (req, res, next) => {
 							return { [key]: condition };
 						}),
 					};
+				} else if (key === "checkIn" || key === "checkOut" || key === 'page') {
+					return acc;
+				} else if (key === "roomType.maxGuest") {
+					return {
+						...acc,
+						[key]: { $gte: parseInt(queryParamValue) },
+					};
 				} else {
 					return {
 						...acc,
-						[key]: queryParamValue,
+						[key]: isNaN(queryParamValue)
+							? queryParamValue
+							: parseInt(queryParamValue),
 					};
 				}
 			}
 
 			return acc;
 		},
-		{ isVerified: "true" }
+		{ 
+			isVerified: "true",
+			skip: req.query.index * DEFAULT_PAGE_LIMIT,
+			limit: DEFAULT_PAGE_LIMIT
+		}
 	);
 
 	console.log(findHotelQuery);
 
-	const hotels = await Hotel.find(findHotelQuery)
-		.select("hotelName country district address averagePrice rating images")
+	let hotels = await Hotel.find(findHotelQuery)
+		.sort({ createdAt: 'desc' })
+		.select(
+			"_id hotelName country district address averagePrice rating images"
+		)
 		.populate({ path: "hotelAmenities" });
+
+	const { checkIn, checkOut } = req.query;
+
+	if (checkIn && checkOut) {
+		console.log(checkIn, checkOut);
+		const filtered = await Promise.all(
+			hotels.map((hotel) =>
+				getHotelsStatusWithCheckInAndCheckOut(
+					hotel,
+					new Date(checkIn),
+					new Date(checkOut)
+				)
+			)
+		);
+		console.log(filtered);
+		hotels = hotels.filter((_, index) => !filtered[index]);
+	}
 
 	// Randomly select 3 images for each hotel
 	const hotelsWithRandomImages = hotels.map((hotel) => {
@@ -228,45 +266,126 @@ module.exports.getAllHotels = catchAsync(async (req, res, next) => {
 	}
 });
 
+const getHotelsStatusWithCheckInAndCheckOut = async (
+	hotel,
+	checkIn,
+	checkOut
+) => {
+	const rooms = await Room.find({
+		hotelId: hotel._id,
+	})
+		.select("_id")
+		.sort({ _id: 1 });
+	
+	const roomId = rooms.map(({ _id }) => _id);
+
+	// Filter out _id only
+	// Get all (distinct) the rooms Ids which is overlapped in the check in and check out date range
+	const bookingCheck = await Booking.distinct("roomId", {
+		$and: [
+			{
+				$or: [
+					{
+						$and: [
+							{ checkin: { $lte: checkIn } },
+							{ checkout: { $gte: checkOut } },
+						],
+					},
+					{
+						$and: [
+							{ checkin: { $lte: checkIn } },
+							{ checkout: { $lt: checkOut, $gt: checkIn } },
+						],
+					},
+					{
+						$and: [
+							{ checkin: { $lt: checkOut, $gt: checkIn } },
+							{ checkout: { $gte: checkOut } },
+						],
+					},
+					{
+						$and: [
+							{ checkin: { $gt: checkIn } },
+							{ checkout: { $lt: checkOut } },
+						],
+					},
+				],
+			},
+			{
+				hotelId: hotel._id,
+			},
+		],
+	});
+
+	console.log(bookingCheck, roomId)
+
+	return JSON.stringify(bookingCheck) === JSON.stringify(roomId);
+};
+
 module.exports.reviewHotel = catchAsync(async (req, res, next) => {
-  // Get all hotels
+	// Get all hotels
 
-  // Can use another way call "Using bulk write operations"
-  const reviewObj = new Review(req.body);
+	// Can use another way call "Using bulk write operations"
+	const reviewObj = new Review(req.body);
 
-  reviewObj.hotelId = req.params.hotelId;
-  reviewObj.user = req.user._id;
+	reviewObj.hotelId = req.params.hotelId;
+	reviewObj.user = req.user._id;
 
-  const hotel = await Hotel.findById(req.params.hotelId);
-  if (hotel) {
-    await reviewObj.save();
+	const hotel = await Hotel.findById(req.params.hotelId);
+	if (hotel) {
+		await reviewObj.save();
 
-    hotel.reviews.push(reviewObj._id);
+		hotel.reviews.push(reviewObj._id);
 
-		await hotel.save();
+		const hotel = await Hotel.findById(req.params.hotelId);
+		if (hotel) {
+			await reviewObj.save();
 
-		return res.status(200).json({ message: "Review successfully" });
+			hotel.reviews.push(reviewObj._id);
+
+			await hotel.save();
+
+			return res.status(200).json({ message: "Review successfully" });
+		} else {
+			return next(new AppError("Hotels not found", 404));
+		}
+	}
+});
+
+module.exports.reportHotel = catchAsync(async (req, res, next) => {
+	// Can use another way call "Using bulk write operations"
+	const reportObj = new Reports(req.body);
+	reportObj.hotelId = req.params.hotelId;
+	reportObj.user = req.user._id;
+
+	const hotel = await Hotel.findById(req.params.hotelId);
+	if (hotel) {
+		await reportObj.save();
+
+		return res
+			.status(200)
+			.json({ message: "Your report has been sent successfully" });
 	} else {
 		return next(new AppError("Hotels not found", 404));
 	}
 });
 
 module.exports.reportHotel = catchAsync(async (req, res, next) => {
-  // Can use another way call "Using bulk write operations"
-  const reportObj = new Reports(req.body);
-  reportObj.hotelId = req.params.hotelId;
-  reportObj.user = req.user._id;
+	// Can use another way call "Using bulk write operations"
+	const reportObj = new Reports(req.body);
+	reportObj.hotelId = req.params.hotelId;
+	reportObj.user = req.user._id;
 
-  const hotel = await Hotel.findById(req.params.hotelId);
-  if (hotel) {
-    await reportObj.save();
+	const hotel = await Hotel.findById(req.params.hotelId);
+	if (hotel) {
+		await reportObj.save();
 
-    return res
-      .status(200)
-      .json({ message: "Your report has been sent successfully" });
-  } else {
-    return next(new AppError("Hotels not found", 404));
-  }
+		return res
+			.status(200)
+			.json({ message: "Your report has been sent successfully" });
+	} else {
+		return next(new AppError("Hotels not found", 404));
+	}
 });
 
 module.exports.getReviewsByAveragePoint = catchAsync(async (req, res, next) => {
@@ -307,6 +426,32 @@ module.exports.deleteHotel = catchAsync(async (req, res, next) => {
 	});
 });
 
+module.exports.test = catchAsync(async (req, res, next) => {
+  console.log(req.files);
+
+  return res.json("Hello");
+});
+
+module.exports.checkIsUserEverStayHere = catchAsync(async (req, res, next) => {
+  const userId = req.user._id;
+  const hotelId = req.params.hotelId;
+
+  const userBooking = await Booking.find({
+    user: userId,
+    hotelId: hotelId,
+  });
+
+  if (userBooking && userBooking.length > 0) {
+    return res.status(200).json({
+      message: "User stayed here",
+    });
+  } else {
+    return res.status(405).json({
+      message: "You have'nt stayed here before",
+    });
+  }
+});
+
 module.exports.updateHotel = catchAsync(async (req, res, next) => {
 	const session = await mongoose.startSession();
 	session.startTransaction();
@@ -314,7 +459,7 @@ module.exports.updateHotel = catchAsync(async (req, res, next) => {
 	try {
 		const hotelIdUpdate = req.params.hotelId;
 
-		// Get image paths only for backgroundImage
+    // Get image paths only for backgroundImage`
 
 		// Khi gui 1 list array image moi ve server (bao gom nhung cai moi va cu) xu li the nao
 		const { backgroundImage, hotelImages, viewImages } =

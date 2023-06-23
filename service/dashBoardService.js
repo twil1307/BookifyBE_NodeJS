@@ -100,29 +100,45 @@ const getHotelIncomeMonths = catchAsync(async (req, res, next) => {
   }
 });
 
-const getDashboardIncomeMonths = catchAsync(async (req, res, next) => {
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
+const getDashboardExchangeMonthly = catchAsync(async (req, res, next) => {
+  const year = req.query.year;
   // if there is month, server will return the a specific month data
   const bookingData = await Booking.find({
     $and: [
       {
-        $expr: { $eq: [{ $year: "$createdAt" }, currentYear] },
+        $expr: { $eq: [{ $year: "$createdAt" }, year] },
       },
     ],
-  }).select("createdAt price");
+  })
+    .select("createdAt price user")
+    .populate("user", "subName name username");
 
-  const { monthsIncome, total } = await getDashboardIncomeByMonthly(
-    bookingData
-  );
+  const { monthlyData, total } = await getDashboardIncomeMonthly(bookingData);
+
+  const transactData = await getDashboardIncomeHistory(bookingData);
 
   return res.status(200).json({
-    income: monthsIncome,
+    income: monthlyData,
     total: total,
+    transactData: transactData,
   });
 });
 
-const getDashboardIncomeByMonthly = async (bookingData) => {
+const getDashboardIncomeHistory = async (bookingData) => {
+  const data = bookingData.map((booking) => ({
+    username: booking.user.username,
+    subName: booking.user.subName,
+    name: booking.user.name,
+    userId: booking.user._id,
+    createdAt: booking.createdAt,
+    price: booking.price,
+    bookingId: booking._id,
+  }));
+
+  return data;
+};
+
+const getDashboardIncomeMonthly = async (bookingData) => {
   const monthShortNames = [
     "Jan",
     "Feb",
@@ -139,23 +155,68 @@ const getDashboardIncomeByMonthly = async (bookingData) => {
   ];
   let total = 0;
 
-  const monthlyIncome = bookingData.reduce((accumulator, item) => {
+  const monthlyData = {};
+
+  for (let i = 0; i < monthShortNames.length; i++) {
+    monthlyData[monthShortNames[i]] = 0;
+  }
+
+  bookingData.reduce((accumulator, item) => {
     const date = new Date(item.createdAt);
     const month = date.getMonth();
     const monthStr = monthShortNames[month];
 
-    if (!accumulator[monthStr]) {
-      accumulator[monthStr] = 0;
-    }
+    // if (!accumulator[monthStr]) {
+    //   accumulator[monthStr] = 0;
+    // }
 
-    accumulator[monthStr] += item.price;
+    monthlyData[monthStr] += item.price;
+    // accumulator[monthStr] += item.price;
 
     total += item.price;
 
     return accumulator;
   }, {});
 
-  return { monthlyIncome, total };
+  return { monthlyData, total };
+};
+
+const getDashboardExchangeYearly = catchAsync(async (req, res, next) => {
+  // if there is month, server will return the a specific month data
+  const bookingData = await Booking.find({}).select("createdAt price");
+
+  console.log(bookingData);
+
+  const { yearlyData, total } = await getDashboardIncomeYearly(bookingData);
+
+  return res.status(200).json({
+    income: yearlyData,
+    total: total,
+  });
+});
+
+const getDashboardIncomeYearly = async (bookingData) => {
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  let total = 0;
+  const yearlyData = {};
+
+  for (let i = currentYear; i >= currentYear - 9; i--) {
+    yearlyData[i] = 0;
+  }
+
+  bookingData.reduce((accumulator, item) => {
+    const date = new Date(item.createdAt);
+    const year = date.getFullYear() + "";
+
+    yearlyData[year] += item.price;
+
+    total += item.price;
+
+    return accumulator;
+  }, {});
+
+  return { yearlyData, total };
 };
 
 const getHotelRating = catchAsync(async (req, res, next) => {
@@ -181,7 +242,7 @@ const getHotelRating = catchAsync(async (req, res, next) => {
   console.log(reviewsList);
 
   return res.status(200).json({
-    reviews: reviewsList,
+    ratings: reviewsList,
   });
 });
 
@@ -546,5 +607,6 @@ module.exports = {
   getNumberOfRatingByMonth,
   getNumberOfUserRegisteredByMonth,
   getReportData,
-  getDashboardIncomeByMonthly,
+  getDashboardExchangeMonthly,
+  getDashboardExchangeYearly,
 };

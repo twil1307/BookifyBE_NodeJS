@@ -4,13 +4,28 @@ const jwtMiddleware = require("../middleware/jwtMiddleware");
 const { hasRole } = require("../middleware/userAuthMiddleware");
 const amenityController = require("../controller/amenity.controller");
 const { userImageUploaderLocal } = require("../service/uploadImg");
+const Roles = require("../enum/Role");
 
 router.post(
   "/type",
   userImageUploaderLocal.none(),
   jwtMiddleware,
-  hasRole(3),
+  hasRole(Roles.ADMIN),
   amenityController.signNewAmenityType
+);
+
+router.get(
+  "/type",
+  jwtMiddleware,
+  hasRole(Roles.ADMIN),
+  amenityController.getAllAmenityType
+);
+
+router.get(
+  "/",
+  jwtMiddleware,
+  hasRole(Roles.ADMIN),
+  amenityController.getAllAmenities
 );
 
 module.exports = router;

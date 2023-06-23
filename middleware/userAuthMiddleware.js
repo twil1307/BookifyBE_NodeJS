@@ -2,6 +2,8 @@ require("dotenv").config();
 const mongoose = require("mongoose");
 const catchAsync = require("../utils/catchAsync");
 const Hotel = require("../models/Hotel");
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
 const isExactUser = catchAsync(async (req, res, next) => {
   const userId = mongoose.Types.ObjectId(req.params.userId);
@@ -48,4 +50,40 @@ const isExactHost = catchAsync(async (req, res, next) => {
   }
 });
 
-module.exports = { isExactUser, hasRole, isExactHost };
+const isUserAvailable = catchAsync(async (req, res, next) => {
+  try {
+    const { refreshToken } = req.cookies;
+
+    if (!refreshToken) {
+      return next();
+    }
+
+    const token = refreshToken.replace("Refresh ", "");
+
+    jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
+      if (err) {
+        return next();
+      }
+
+      const idFind = decoded._id;
+
+      User.findOne({ _id: idFind })
+        .select("-password")
+        .then((user) => {
+          if (user) {
+            req.user = user;
+            return next();
+          } else {
+            return next();
+          }
+        })
+        .catch((err) => {
+          next();
+        });
+    });
+  } catch (error) {
+    return next();
+  }
+});
+
+module.exports = { isExactUser, hasRole, isExactHost, isUserAvailable };
