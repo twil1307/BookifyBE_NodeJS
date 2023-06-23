@@ -144,6 +144,13 @@ module.exports.signNewHotelType = async (req, res) => {
   }
 };
 
+module.exports.getHotelTypes = catchAsync(async (req, res) => {
+  const hotelTypes = await HotelType.find({});
+  return res.status(200).json({
+    types: hotelTypes,
+  });
+});
+
 module.exports.getHotel = catchAsync(async (req, res, next) => {
   const hotel = await Hotel.findById(req.params.hotelId)
     .populate("hotelType")

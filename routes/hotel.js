@@ -39,6 +39,8 @@ router.post(
   hotelController.signNewHotelType
 );
 
+router.get("/type", jwtMiddleware, hotelController.getHotelTypes);
+
 // get all hotel
 router.get("/", isUserAvailable, hotelController.getAllHotels);
 

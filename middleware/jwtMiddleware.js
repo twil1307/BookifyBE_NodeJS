@@ -16,7 +16,12 @@ module.exports = (req, res, next) => {
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
       if (err) {
-        return res.status(401).json({ error: err.message });
+        console.log(err.name);
+        if (err.name == "TokenExpiredError" || err.message == "jwt expired") {
+          return res.status(469).json({ error: err.message });
+        } else {
+          return res.status(401).json({ error: err.message });
+        }
       }
 
       const idFind = decoded._id;
@@ -28,11 +33,11 @@ module.exports = (req, res, next) => {
             req.user = user;
             return next();
           } else {
-            return res.status(422).json({ error: "Token not verified 3" });
+            return res.status(401).json({ error: "User not available" });
           }
         })
         .catch((err) => {
-          console.log(err);
+          return res.status(401).json({ error: "User not available" });
         });
     });
   } catch (error) {

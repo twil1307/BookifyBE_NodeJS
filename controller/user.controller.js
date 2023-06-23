@@ -17,6 +17,7 @@ const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const BankingAccount = require("../models/BankingAccount");
 const Booking = require("../models/Booking");
+const Hotel = require("../models/Hotel");
 
 module.exports.getUser = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.params.userId).select("-password");
@@ -90,6 +91,8 @@ module.exports.logIn = catchAsync(async (req, res, next) => {
 
   const user = await User.findOne({ username: userObj.username });
 
+  console.log(user);
+
   if (user) {
     const result = await comparePassword(userObj.password, user.password);
 
@@ -131,7 +134,7 @@ module.exports.refreshNewTokens = (req, res, next) => {
   console.log(refreshToken);
 
   if (!refreshToken) {
-    return res.status(401).json({ error: "Login again" });
+    return res.status(401).json({ error: "Login required" });
   }
 
   const token = refreshToken.replace("Refresh ", "");
@@ -148,7 +151,7 @@ module.exports.refreshNewTokens = (req, res, next) => {
         if (user) {
           return user;
         } else {
-          return res.status(422).json({ error: "Token not verified 3" });
+          return res.status(422).json({ error: "User is not available" });
         }
       })
       .then((user) => {
@@ -207,13 +210,17 @@ module.exports.verifyJwtToken = catchAsync(async (req, res, next) => {
 
   const result = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-  const userData = await User.findOne({ _id: result._id }).select(
-    "_id username name subName avatar hotelBookmarked"
-  );
+  const userData = await User.findOne({ _id: result._id });
 
-  return res.status(202).json({
-    user: userData,
-  });
+  if (userData) {
+    return res.status(202).json({
+      message: "User already login",
+    });
+  } else {
+    return res.status(405).json({
+      message: "User has not login yet",
+    });
+  }
 });
 
 module.exports.testIsTokenSave = catchAsync(async (req, res, next) => {
@@ -303,6 +310,27 @@ module.exports.getUserRemainingAmount = catchAsync(async (req, res, next) => {
 
   return res.status(200).json({
     amount: bankingAccountId.bankingAccountNumber.amount,
+  });
+});
+
+module.exports.getUserBookmarkedHotels = catchAsync(async (req, res, next) => {
+  const hotelBookmarkedId = req.user.hotelBookmarked;
+
+  const hotels = await Hotel.find({ _id: { $in: hotelBookmarkedId } }).select(
+    "_id hotelName country district address roomType rating backgroundImg"
+  );
+
+  const bookmarkHotels = hotels.map((hotel) => {
+    const { roomType, ...hotelData } = hotel._doc;
+
+    return {
+      ...hotelData,
+      averagePrice: roomType.roomPrice,
+    };
+  });
+
+  return res.status(200).json({
+    bookmarkedHotel: bookmarkHotels,
   });
 });
 

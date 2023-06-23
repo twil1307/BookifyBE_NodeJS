@@ -25,6 +25,12 @@ router.get(
   userController.getUserBookingHistory
 );
 
+router.get(
+  "/bookmarked",
+  jwtMiddleware,
+  userController.getUserBookmarkedHotels
+);
+
 /* GET user */
 router.get("/:userId", formDataRetrieve.none(), userController.getUser);
 
@@ -68,7 +74,7 @@ router.put(
 
 // add favorites
 router.put(
-  "/favorite/:hotelId",
+  "/bookmarked/:hotelId",
   jwtMiddleware,
   userController.addOrRemoveFavorite
 );
