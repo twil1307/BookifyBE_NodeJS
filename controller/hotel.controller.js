@@ -151,6 +151,16 @@ module.exports.getHotelTypes = catchAsync(async (req, res) => {
   });
 });
 
+module.exports.getOwnerHotel = catchAsync(async (req, res) => {
+  const userId = req.user._id;
+
+  const hotel = await Hotel.findOne({ user: userId });
+
+  return res.status(200).json({
+    types: hotel,
+  });
+});
+
 module.exports.getHotel = catchAsync(async (req, res, next) => {
   const hotel = await Hotel.findById(req.params.hotelId)
     .populate("hotelType")
