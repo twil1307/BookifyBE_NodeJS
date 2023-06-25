@@ -166,7 +166,7 @@ module.exports.getHotel = catchAsync(async (req, res, next) => {
     .populate("hotelType")
     .populate({
       path: "user",
-      select: "username subName name avatar",
+      select: "username subName name avatar createdAt",
     })
     .populate("hotelAmenities", "-createdAt -updatedAt")
     .populate("roomType")
