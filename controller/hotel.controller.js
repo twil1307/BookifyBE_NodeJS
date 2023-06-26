@@ -157,7 +157,7 @@ module.exports.getOwnerHotel = catchAsync(async (req, res) => {
   const hotel = await Hotel.findOne({ user: userId });
 
   return res.status(200).json({
-    types: hotel,
+    hotel: hotel,
   });
 });
 
@@ -352,23 +352,17 @@ module.exports.reviewHotel = catchAsync(async (req, res, next) => {
   reviewObj.user = req.user._id;
 
   const hotel = await Hotel.findById(req.params.hotelId);
+
   if (hotel) {
     await reviewObj.save();
 
-    hotel.reviews.push(reviewObj._id);
+    await hotel.reviews.push(reviewObj._id);
 
-    const hotel = await Hotel.findById(req.params.hotelId);
-    if (hotel) {
-      await reviewObj.save();
+    await hotel.save();
 
-      hotel.reviews.push(reviewObj._id);
-
-      await hotel.save();
-
-      return res.status(200).json({ message: "Review successfully" });
-    } else {
-      return next(new AppError("Hotels not found", 404));
-    }
+    return res.status(200).json({ message: "Review successfully" });
+  } else {
+    return next(new AppError("Hotels not found", 404));
   }
 });
 
