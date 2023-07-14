@@ -46,6 +46,13 @@ router.post(
   hotelController.signNewHotelType
 );
 
+router.get(
+  "/getOwnerHotel",
+  jwtMiddleware,
+  hasRole(Roles.HOST, Roles.ADMIN),
+  hotelController.getOwnerHotel
+);
+
 router.get("/type", jwtMiddleware, hotelController.getHotelTypes);
 
 // get all hotel

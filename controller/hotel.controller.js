@@ -152,17 +152,34 @@ module.exports.signNewHotelType = async (req, res) => {
 	}
 };
 
+module.exports.getHotelTypes = catchAsync(async (req, res) => {
+  const hotelTypes = await HotelType.find({});
+  return res.status(200).json({
+    types: hotelTypes,
+  });
+});
+
+module.exports.getOwnerHotel = catchAsync(async (req, res) => {
+  const userId = req.user._id;
+
+  const hotel = await Hotel.findOne({ user: userId });
+
+  return res.status(200).json({
+    hotel: hotel,
+  });
+});
+
 module.exports.getHotel = catchAsync(async (req, res, next) => {
-	const hotel = await Hotel.findById(req.params.hotelId)
-		.populate("hotelType")
-		.populate({
-			path: "user",
-			select: "username subName name avatar",
-		})
-		.populate("hotelAmenities", "-createdAt -updatedAt")
-		.populate("roomType")
-		.populate("reviews")
-		.populate("rating");
+  const hotel = await Hotel.findById(req.params.hotelId)
+    .populate("hotelType")
+    .populate({
+      path: "user",
+      select: "username subName name avatar createdAt",
+    })
+    .populate("hotelAmenities", "-createdAt -updatedAt")
+    .populate("roomType")
+    .populate("reviews")
+    .populate("rating");
 
 	const data = await getAveragePoint(hotel.reviews);
 
@@ -331,25 +348,19 @@ module.exports.reviewHotel = catchAsync(async (req, res, next) => {
 	reviewObj.hotelId = req.params.hotelId;
 	reviewObj.user = req.user._id;
 
-	const hotel = await Hotel.findById(req.params.hotelId);
-	if (hotel) {
-		await reviewObj.save();
+  const hotel = await Hotel.findById(req.params.hotelId);
 
-		hotel.reviews.push(reviewObj._id);
+  if (hotel) {
+    await reviewObj.save();
 
-		const hotel = await Hotel.findById(req.params.hotelId);
-		if (hotel) {
-			await reviewObj.save();
+    await hotel.reviews.push(reviewObj._id);
 
-			hotel.reviews.push(reviewObj._id);
+    await hotel.save();
 
-			await hotel.save();
-
-			return res.status(200).json({ message: "Review successfully" });
-		} else {
-			return next(new AppError("Hotels not found", 404));
-		}
-	}
+    return res.status(200).json({ message: "Review successfully" });
+  } else {
+    return next(new AppError("Hotels not found", 404));
+  }
 });
 
 module.exports.reportHotel = catchAsync(async (req, res, next) => {
