@@ -15,15 +15,6 @@ const { isUserEverStayHere } = require("../middleware/reviewQualify");
 const Roles = require("../enum/Role");
 const { countPageViews } = require("../middleware/pageViewMiddleware");
 
-<<<<<<< HEAD
-router.get("/test", (req, res, next) => {
-  console.log(JSON.parse(req.query.p));  
-  return res.json("Ok hup'");
-})
-=======
-router.post("/test", hotelController.test);
->>>>>>> ad38791eadd2ea6dd43cf250020604973ecd60ba
-
 // Create new hotel with role admin
 router.post(
   "/",

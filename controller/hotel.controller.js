@@ -208,17 +208,31 @@ module.exports.getAllHotels = catchAsync(async (req, res, next) => {
 	const findHotelQuery = Object.keys(req.query).reduce(
 		(acc, key) => {
 			const queryParamValue = req.query[key];
+			console.log( req.query[key]);
 			if (queryParamValue != null) {
 				if (queryParamValue.startsWith("[")) {
 					return {
 						...acc,
-						$or: JSON.parse(queryParamValue).map((condition) => {
-							return { [key]: condition };
-						}),
+						[key]: {
+							$all: JSON.parse(queryParamValue).map((condition) => {
+								return { "_id": condition };
+							}),
+						}
 					};
 				} else if (key === "checkIn" || key === "checkOut" || key === 'page') {
 					return acc;
-				} else if (key === "roomType.maxGuest") {
+				} else if (key === 'roomType.minPrice') {
+					return {
+						...acc,
+						"roomType.roomPrice": { $gte: parseInt(queryParamValue), ...acc["roomType.roomPrice"] }
+					}
+				} else if (key === 'roomType.maxPrice') {
+					return {
+						...acc,
+						"roomType.roomPrice": { $lte: parseInt(queryParamValue), ...acc["roomType.roomPrice"] }
+					}
+				}
+				else if (key === "roomType.maxGuest") {
 					return {
 						...acc,
 						[key]: { $gte: parseInt(queryParamValue) },
@@ -236,9 +250,7 @@ module.exports.getAllHotels = catchAsync(async (req, res, next) => {
 			return acc;
 		},
 		{ 
-			isVerified: "true",
-			skip: req.query.index * DEFAULT_PAGE_LIMIT,
-			limit: DEFAULT_PAGE_LIMIT
+			isVerified: "true"
 		}
 	);
 
@@ -246,6 +258,8 @@ module.exports.getAllHotels = catchAsync(async (req, res, next) => {
 
 	let hotels = await Hotel.find(findHotelQuery)
 		.sort({ createdAt: 'desc' })
+		.skip(req.query.index ? req.query.index * DEFAULT_PAGE_LIMIT : 0)
+		.limit(DEFAULT_PAGE_LIMIT)
 		.select(
 			"_id hotelName country district address averagePrice rating images"
 		)
@@ -438,9 +452,9 @@ module.exports.deleteHotel = catchAsync(async (req, res, next) => {
 });
 
 module.exports.test = catchAsync(async (req, res, next) => {
-  console.log(req.files);
+	const hotels = await Hotel.find()	
 
-  return res.json("Hello");
+  	return res.json(hotels);
 });
 
 module.exports.checkIsUserEverStayHere = catchAsync(async (req, res, next) => {
