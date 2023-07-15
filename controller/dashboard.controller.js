@@ -15,6 +15,7 @@ const {
   getReportData,
   getDashboardExchangeMonthly,
   getDashboardExchangeYearly,
+  extractArray,
 } = require("../service/dashBoardService");
 
 // Get all hotel for dashboard (To enable hotel (?))
@@ -68,10 +69,19 @@ module.exports.getHotelIncomeMonths = catchAsync(async (req, res, next) => {
     const { monthsIncome, estimateObj, total, estimate } =
       await getHotelIncomeByMonth(bookingData);
 
+    const [labelIncome, valueIncome] = extractArray(monthsIncome);
+    const [labelEstimate, valueEstimate] = extractArray(estimateObj);
+
     return res.status(200).json({
-      income: monthsIncome,
+      income: {
+        label: labelIncome,
+        value: valueIncome,
+      },
       total: total,
-      esimate: estimateObj,
+      esimate: {
+        label: labelEstimate,
+        value: valueEstimate,
+      },
       estimateTotal: estimate,
     });
   }

@@ -67,6 +67,8 @@ module.exports.signNewHotel = async (req, res, next) => {
     // Add new amenities (not existed) return ID
     const newAmenitiesId = await addNewAmenityNotExisted(newAmenities, session);
 
+    console.log(newAmenitiesId);
+
     // Pass existed amenities ids and new amenities ids
     hotelSign.hotelAmenities = [...listExistedAmenitiesAdd, ...newAmenitiesId];
 
@@ -74,16 +76,12 @@ module.exports.signNewHotel = async (req, res, next) => {
     const newRoomTypeData = new RoomType(roomTypeSign);
     const { _id, ...roomType } = newRoomTypeData;
 
-    console.log(roomType);
-
     hotelSign.roomType = roomType;
 
     // add new room
     const listRoomId = await addNewRooms(hotelSign._id, roomNum, session);
 
     hotelSign.Rooms = [...listRoomId.flat()];
-
-    console.log(hotelSign);
 
     // Saving new hotel
     const hotelSignComplete = await hotelSign.save();
@@ -119,8 +117,6 @@ module.exports.signNewHotel = async (req, res, next) => {
 
 module.exports.signNewHotelType = async (req, res) => {
   try {
-    console.log(req.body);
-
     const hotelTypeSign = new HotelType(req.body);
 
     const newType = await hotelTypeSign.save();
@@ -242,7 +238,6 @@ module.exports.getAllHotels = catchAsync(async (req, res, next) => {
   const { checkIn, checkOut } = req.query;
 
   if (checkIn && checkOut) {
-    console.log(checkIn, checkOut);
     const filtered = await Promise.all(
       hotels.map((hotel) =>
         getHotelsStatusWithCheckInAndCheckOut(
@@ -337,8 +332,6 @@ const getHotelsStatusWithCheckInAndCheckOut = async (
     ],
   });
 
-  console.log(bookingCheck, roomId);
-
   return JSON.stringify(bookingCheck) === JSON.stringify(roomId);
 };
 
@@ -421,8 +414,6 @@ module.exports.deleteHotel = catchAsync(async (req, res, next) => {
     (image) => "public/" + image.imagePath
   );
 
-  console.log(listImage);
-
   fileDelete(listImage);
 
   // Get all reviews
@@ -438,12 +429,6 @@ module.exports.deleteHotel = catchAsync(async (req, res, next) => {
     message: "Delete successfully completed",
     data: { roomsDelete, hotelDelete, reviewsDelete },
   });
-});
-
-module.exports.test = catchAsync(async (req, res, next) => {
-  console.log(req.files);
-
-  return res.json("Hello");
 });
 
 module.exports.checkIsUserEverStayHere = catchAsync(async (req, res, next) => {

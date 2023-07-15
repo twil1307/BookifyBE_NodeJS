@@ -117,8 +117,10 @@ const getDashboardExchangeMonthly = catchAsync(async (req, res, next) => {
 
   const transactData = await getDashboardIncomeHistory(bookingData);
 
+  const [label, value] = extractArray(monthlyData);
+
   return res.status(200).json({
-    income: monthlyData,
+    income: { label, value },
     total: total,
     transactData: transactData,
   });
@@ -183,15 +185,23 @@ const getDashboardIncomeMonthly = async (bookingData) => {
 
 const getDashboardExchangeYearly = catchAsync(async (req, res, next) => {
   // if there is month, server will return the a specific month data
-  const bookingData = await Booking.find({}).select("createdAt price");
+  const bookingData = await Booking.find({})
+    .select("createdAt price user")
+    .populate("user", "subName name username");
 
-  console.log(bookingData);
+  const transactData = await getDashboardIncomeHistory(bookingData);
 
   const { yearlyData, total } = await getDashboardIncomeYearly(bookingData);
 
+  const [label, value] = extractArray(yearlyData);
+
   return res.status(200).json({
-    income: yearlyData,
+    income: {
+      label,
+      value,
+    },
     total: total,
+    transactData: transactData,
   });
 });
 
@@ -596,6 +606,12 @@ const getReportData = async (req, res, next) => {
   }
 };
 
+const extractArray = (obj) => {
+  const keys = Object.keys(obj);
+  const values = Object.values(obj);
+  return [keys, values];
+};
+
 module.exports = {
   getHotelIncome,
   getHotelIncomeByMonth,
@@ -609,4 +625,5 @@ module.exports = {
   getReportData,
   getDashboardExchangeMonthly,
   getDashboardExchangeYearly,
+  extractArray,
 };
