@@ -159,8 +159,15 @@ const getDashboardIncomeMonthly = async (bookingData) => {
 
   const monthlyData = {};
 
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth();
+
   for (let i = 0; i < monthShortNames.length; i++) {
-    monthlyData[monthShortNames[i]] = 0;
+    if (currentMonth < i) {
+      monthlyData[monthShortNames[i]] = null;
+    } else {
+      monthlyData[monthShortNames[i]] = 0;
+    }
   }
 
   bookingData.reduce((accumulator, item) => {
