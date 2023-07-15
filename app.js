@@ -5,12 +5,14 @@ var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 const cors = require("cors");
 const globalErrorHandler = require("./utils/globalErrorHandler");
+const { WebSocketServer, WebSocket } = require("ws");
 require("dotenv").config();
 
 // Database configuration ----------------------------
 require("./config/database");
 
 var app = express();
+const wss = new WebSocketServer({ noServer: true })
 
 app.use(logger("dev"));
 app.use(express.json());

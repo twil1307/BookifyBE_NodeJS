@@ -67,8 +67,6 @@ module.exports.signNewHotel = async (req, res, next) => {
     // Add new amenities (not existed) return ID
     const newAmenitiesId = await addNewAmenityNotExisted(newAmenities, session);
 
-    console.log(newAmenitiesId);
-
     // Pass existed amenities ids and new amenities ids
     hotelSign.hotelAmenities = [...listExistedAmenitiesAdd, ...newAmenitiesId];
 
@@ -194,16 +192,35 @@ module.exports.getAllHotels = catchAsync(async (req, res, next) => {
   const findHotelQuery = Object.keys(req.query).reduce(
     (acc, key) => {
       const queryParamValue = req.query[key];
+      console.log(req.query[key]);
       if (queryParamValue != null) {
         if (queryParamValue.startsWith("[")) {
           return {
             ...acc,
-            $or: JSON.parse(queryParamValue).map((condition) => {
-              return { [key]: condition };
-            }),
+            [key]: {
+              $all: JSON.parse(queryParamValue).map((condition) => {
+                return { _id: condition };
+              }),
+            },
           };
-        } else if (key === "checkIn" || key === "checkOut" || key === "index") {
+        } else if (key === "checkIn" || key === "checkOut" || key === "page") {
           return acc;
+        } else if (key === "roomType.minPrice") {
+          return {
+            ...acc,
+            "roomType.roomPrice": {
+              $gte: parseInt(queryParamValue),
+              ...acc["roomType.roomPrice"],
+            },
+          };
+        } else if (key === "roomType.maxPrice") {
+          return {
+            ...acc,
+            "roomType.roomPrice": {
+              $lte: parseInt(queryParamValue),
+              ...acc["roomType.roomPrice"],
+            },
+          };
         } else if (key === "roomType.maxGuest") {
           return {
             ...acc,
@@ -223,17 +240,17 @@ module.exports.getAllHotels = catchAsync(async (req, res, next) => {
     },
     {
       isVerified: "true",
-      // skip: req.query.index * DEFAULT_PAGE_LIMIT,
-      // limit: DEFAULT_PAGE_LIMIT,
     }
   );
 
+  console.log(findHotelQuery);
+
   let hotels = await Hotel.find(findHotelQuery)
     .sort({ createdAt: "desc" })
-    .select("_id hotelName country district address roomType rating images")
-    .populate({ path: "hotelAmenities" })
-    .skip(req.query.index * DEFAULT_PAGE_LIMIT)
-    .limit(DEFAULT_PAGE_LIMIT);
+    .skip(req.query.index ? req.query.index * DEFAULT_PAGE_LIMIT : 0)
+    .limit(DEFAULT_PAGE_LIMIT)
+    .select("_id hotelName country district address averagePrice rating images")
+    .populate({ path: "hotelAmenities" });
 
   const { checkIn, checkOut } = req.query;
 
@@ -255,24 +272,8 @@ module.exports.getAllHotels = catchAsync(async (req, res, next) => {
     const randomImages = hotel.images
       .sort(() => 0.5 - Math.random()) // sort images array by an random way
       .slice(0, 3);
-    const { roomType, ...hotelData } = hotel._doc;
-
-    if (req.user && req.user.hotelBookmarked.includes(hotel._id)) {
-      hotelData.isBookmarked = true;
-    } else {
-      hotelData.isBookmarked = false;
-    }
-
-    return {
-      ...hotelData,
-      averagePrice: roomType.roomPrice,
-      images: randomImages,
-    };
+    return { ...hotel._doc, images: randomImages };
   });
-
-  if (!req.user) {
-    hotelsWithRandomImages.message = "Login for better experience";
-  }
 
   if (hotels) {
     return res.status(200).json({ hotels: hotelsWithRandomImages });
