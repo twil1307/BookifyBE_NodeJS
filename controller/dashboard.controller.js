@@ -243,6 +243,10 @@ module.exports.getDashBoardDetailsInfo = catchAsync(async (req, res, next) => {
 
     const reportData = await getReportData(req, res, next);
 
+    const [labelDailyBooking, valueLabelBooking] = extractArray(dailyBooking);
+    const [labelTrendyBooking, valueTrendyBooking] =
+      extractArray(trendingBooking);
+
     return res.status(200).json({
       overallData: {
         numberOfBooking,
@@ -252,8 +256,11 @@ module.exports.getDashBoardDetailsInfo = catchAsync(async (req, res, next) => {
         numberOfNewUser,
       },
       chartData: {
-        dailyBooking,
-        trendingBooking,
+        dailyBooking: { label: labelDailyBooking, value: valueLabelBooking },
+        trendingBooking: {
+          label: labelTrendyBooking,
+          value: valueTrendyBooking,
+        },
       },
       reports: reportData,
     });
