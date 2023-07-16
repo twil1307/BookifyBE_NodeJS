@@ -91,10 +91,20 @@ const getHotelIncomeMonths = catchAsync(async (req, res, next) => {
     const { monthsIncome, estimateObj, total, estimate } =
       await getHotelIncomeByMonth(bookingData);
 
+    const [monthsIncomeLabel, monthsIncomeValue] = extractArray(monthsIncome);
+    const [monthsIncomeEstimateLabel, monthsIncomeEstimateValue] =
+      extractArray(estimateObj);
+
     return res.status(200).json({
-      income: monthsIncome,
+      income: {
+        label: monthsIncomeLabel,
+        value: monthsIncomeValue,
+      },
       total: total,
-      esimate: estimateObj,
+      esimate: {
+        label: monthsIncomeEstimateLabel,
+        value: monthsIncomeEstimateValue,
+      },
       estimateTotal: estimate,
     });
   }
@@ -289,11 +299,20 @@ const getHotelVisitors = catchAsync(async (req, res, next) => {
   const dailyViews = getHotelVisitorsByDays(numberOfVisitors);
   const dailyBooking = getHotelBookingByDays(numberOfBooking);
 
+  const [dailyViewLabel, dailyViewValue] = extractArray(dailyViews);
+  const [dailyBookingLabel, dailyBookingValue] = extractArray(dailyViews);
+
   return res.status(200).json({
     totalViewsNumber: numberOfVisitors.length,
     totalBookingNumber: numberOfBooking.length,
-    dailyViews: dailyViews,
-    dailyBookings: dailyBooking,
+    dailyViews: {
+      label: dailyViewLabel,
+      value: dailyViewValue,
+    },
+    dailyBookings: {
+      label: dailyBookingLabel,
+      value: dailyBookingValue,
+    },
   });
 });
 

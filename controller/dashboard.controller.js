@@ -153,9 +153,11 @@ module.exports.getHotelBookingToday = catchAsync(async (req, res, next) => {
   // const currentMonth = 8;
   // const currentYear = 2023;
 
+  console.log(currentDay, currentMonth, currentYear);
+
   switch (type) {
     case "pending":
-      hotelBookingData = hotelBookingData = await Booking.find({
+      hotelBookingData = await Booking.find({
         $and: [
           { $expr: { $eq: [{ $dayOfMonth: "$checkin" }, currentDay] } },
           { $expr: { $eq: [{ $month: "$checkin" }, currentMonth] } },
@@ -166,7 +168,7 @@ module.exports.getHotelBookingToday = catchAsync(async (req, res, next) => {
       });
       break;
     case "booked":
-      hotelBookingData = hotelBookingData = await Booking.find({
+      hotelBookingData = await Booking.find({
         $and: [
           { $expr: { $eq: [{ $dayOfMonth: "$checkin" }, currentDay] } },
           { $expr: { $eq: [{ $month: "$checkin" }, currentMonth] } },
@@ -177,7 +179,7 @@ module.exports.getHotelBookingToday = catchAsync(async (req, res, next) => {
       });
       break;
     case "checkout":
-      hotelBookingData = hotelBookingData = await Booking.find({
+      hotelBookingData = await Booking.find({
         $and: [
           { $expr: { $eq: [{ $dayOfMonth: "$checkout" }, currentDay] } },
           { $expr: { $eq: [{ $month: "$checkout" }, currentMonth] } },
