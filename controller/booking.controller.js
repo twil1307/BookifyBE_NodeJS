@@ -13,8 +13,8 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
 
   try {
     const bookingRequest = new Booking(req.body);
-    bookingRequest.checkin = new Date(req.body.checkin);
-    bookingRequest.checkout = new Date(req.body.checkout);
+    bookingRequest.checkin = new Date(req.body.checkin + "Z");
+    bookingRequest.checkout = new Date(req.body.checkout + "Z");
 
     const hotelRoomIdsAndPrice = await Hotel.findById(bookingRequest.hotelId)
       .select("Rooms roomType")
