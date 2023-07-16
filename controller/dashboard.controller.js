@@ -165,7 +165,18 @@ module.exports.getHotelBookingToday = catchAsync(async (req, res, next) => {
           { hotelId: hotelId },
           { status: false },
         ],
-      });
+      })
+        .populate({
+          path: "roomId",
+          populate: {
+            path: "roomTypeId",
+            select: "bedType",
+          },
+        })
+        .populate({
+          path: "user",
+          select: "username subName name avatar",
+        });
       break;
     case "booked":
       hotelBookingData = await Booking.find({
@@ -176,7 +187,18 @@ module.exports.getHotelBookingToday = catchAsync(async (req, res, next) => {
           { hotelId: hotelId },
           { status: true },
         ],
-      });
+      })
+        .populate({
+          path: "roomId",
+          populate: {
+            path: "roomTypeId",
+            select: "bedType",
+          },
+        })
+        .populate({
+          path: "user",
+          select: "username subName name avatar",
+        });
       break;
     case "checkout":
       hotelBookingData = await Booking.find({
@@ -187,7 +209,18 @@ module.exports.getHotelBookingToday = catchAsync(async (req, res, next) => {
           { hotelId: hotelId },
           { status: true },
         ],
-      });
+      })
+        .populate({
+          path: "roomId",
+          populate: {
+            path: "roomTypeId",
+            select: "bedType",
+          },
+        })
+        .populate({
+          path: "user",
+          select: "username subName name avatar",
+        });
       break;
     default:
       return res.status(400).json({

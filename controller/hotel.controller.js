@@ -72,6 +72,7 @@ module.exports.signNewHotel = async (req, res, next) => {
 
     // add new room type
     const newRoomTypeData = new RoomType(roomTypeSign);
+    await newRoomTypeData.save();
     const { _id, ...roomType } = newRoomTypeData;
 
     hotelSign.roomType = roomType;
