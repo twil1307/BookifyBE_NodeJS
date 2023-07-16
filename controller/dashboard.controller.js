@@ -38,6 +38,15 @@ module.exports.verifyHotel = catchAsync(async (req, res, next) => {
   });
 });
 
+module.exports.disableHotel = catchAsync(async (req, res, next) => {
+  const hotelId = req.params.hotelId;
+  await Hotel.findByIdAndUpdate(hotelId, { $set: { isVerified: false } });
+
+  return res.status(200).json({
+    message: "Verify hotel successfully",
+  });
+});
+
 module.exports.getHotelIncomeMonths = catchAsync(async (req, res, next) => {
   const hotelId = req.params.hotelId;
   const { month } = req.query;

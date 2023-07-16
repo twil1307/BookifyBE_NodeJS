@@ -73,4 +73,11 @@ router.put(
   dashboardController.verifyHotel
 );
 
+router.put(
+  "/hotels/disable/:hotelId",
+  jwtMiddleware,
+  hasRole(Roles.ADMIN),
+  dashboardController.disableHotel
+);
+
 module.exports = router;
