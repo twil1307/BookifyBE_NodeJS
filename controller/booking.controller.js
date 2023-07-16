@@ -33,7 +33,7 @@ module.exports.bookingRoom = catchAsync(async (req, res, next) => {
     bookingRequest.price = roomPrice;
 
     // Get all (distinct) the rooms Ids which is overlapped in the check in and check out date range
-    const bookingCheck = await Booking.find("roomId", {
+    const bookingCheck = await Booking.distinct("roomId", {
       $and: [
         {
           $or: [
