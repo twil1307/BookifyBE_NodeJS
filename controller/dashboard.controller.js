@@ -47,6 +47,7 @@ module.exports.verifyHotel = catchAsync(async (req, res, next) => {
 
   return res.status(200).json({
     message: "Verify hotel and update user role successfully",
+    user: userRegisHost,
   });
 });
 
