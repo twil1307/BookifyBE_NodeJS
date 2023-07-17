@@ -1,5 +1,6 @@
 const Hotel = require("../models/Hotel");
 const Booking = require("../models/Booking");
+const User = require("../models/User");
 const catchAsync = require("../utils/catchAsync");
 const mongoose = require("mongoose");
 const {
@@ -67,6 +68,8 @@ module.exports.disableBooking = catchAsync(async (req, res, next) => {
   });
 
   console.log(booking);
+
+  const bankingAccountNumber = await User.findById;
 
   return res.status(200).json({
     message: "Accept booking successfully",
