@@ -120,6 +120,7 @@ module.exports.logIn = catchAsync(async (req, res, next) => {
             username: user.username,
             displayName: `${user.subName} ${user.name}`,
             hotelBookmarked: user.hotelBookmarked,
+            bankingAccount: user.bankingAccountNumber || null,
           },
         });
     }
