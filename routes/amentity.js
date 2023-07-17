@@ -10,21 +10,21 @@ router.post(
   "/type",
   userImageUploaderLocal.none(),
   jwtMiddleware,
-  hasRole(Roles.ADMIN),
+  hasRole(Roles.ADMIN, Roles.USER),
   amenityController.signNewAmenityType
 );
 
 router.get(
   "/type",
   jwtMiddleware,
-  hasRole(Roles.ADMIN),
+  hasRole(Roles.ADMIN, Roles.USER),
   amenityController.getAllAmenityType
 );
 
 router.get(
   "/",
   jwtMiddleware,
-  hasRole(Roles.ADMIN),
+  hasRole(Roles.ADMIN, Roles.USER),
   amenityController.getAllAmenities
 );
 
