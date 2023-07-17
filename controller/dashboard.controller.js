@@ -62,7 +62,7 @@ module.exports.verifyBooking = catchAsync(async (req, res, next) => {
 module.exports.disableBooking = catchAsync(async (req, res, next) => {
   const bookingId = req.params.bookingId;
 
-  await Booking.findByIdAndUpdate(bookingId, { $set: { status: false } });
+  await Booking.findByIdAndUpdate(bookingId, { $set: { status: null } });
 
   return res.status(200).json({
     message: "Accept booking successfully",
