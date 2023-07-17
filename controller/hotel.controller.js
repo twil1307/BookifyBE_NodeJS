@@ -175,11 +175,25 @@ module.exports.getHotel = catchAsync(async (req, res, next) => {
   const bookedDate = await getUnavailableDateRanges(req.params.hotelId);
 
   if (hotel) {
-    return res.status(200).json({ hotel: hotel, fullyBookedDates: bookedDate });
+    return res.status(200).json({
+      hotel: hotel,
+      fullyBookedDates: getExtractNewFormatDate(bookedDate),
+    });
   } else {
     return next(new AppError("Hotel not found", 404));
   }
 });
+
+const getExtractNewFormatDate = (bookedDate) => {
+  return bookedDate.map((date) => {
+    const [month, day, year] = date.split("/");
+    const formattedDate = `${year}-${month.padStart(2, "0")}-${day.padStart(
+      2,
+      "0"
+    )}`;
+    return formattedDate;
+  });
+};
 
 Date.prototype.addDays = function (days) {
   var date = new Date(this.valueOf());
