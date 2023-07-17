@@ -154,7 +154,9 @@ module.exports.getHotelBookingAll = catchAsync(async (req, res, next) => {
       });
       break;
     case "pending":
-      hotelBookingData = await Booking.find({ status: false });
+      hotelBookingData = await Booking.find({
+        $and: [{ hotelId: hotelId }, { status: true }],
+      });
       break;
     case "booked":
       hotelBookingData = await Booking.find({
