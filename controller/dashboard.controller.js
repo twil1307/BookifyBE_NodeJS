@@ -31,10 +31,21 @@ module.exports.getAllHotelsDashBoard = catchAsync(async (req, res, next) => {
 
 module.exports.verifyHotel = catchAsync(async (req, res, next) => {
   const hotelId = req.params.hotelId;
-  await Hotel.findByIdAndUpdate(hotelId, { $set: { isVerified: true } });
+
+  const hotelVerified = await Hotel.findByIdAndUpdate(hotelId, {
+    $set: { isVerified: true },
+  });
+
+  console.log("-------------------------------");
+
+  console.log(hotelVerified.user);
+
+  const userRegisHost = await User.findByIdAndUpdate(hotelVerified.user, {
+    $set: { role: 2 },
+  });
 
   return res.status(200).json({
-    message: "Verify hotel successfully",
+    message: "Verify hotel and update user role successfully",
   });
 });
 
