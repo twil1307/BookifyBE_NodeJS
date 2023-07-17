@@ -19,7 +19,7 @@ const { countPageViews } = require("../middleware/pageViewMiddleware");
 router.post(
   "/",
   jwtMiddleware,
-  hasRole(Roles.ADMIN),
+  hasRole(Roles.USER, Roles.ADMIN),
   hotelImageUploaderLocal.fields([
     { name: "backgroundImage", maxCount: 1 },
     { name: "hotelImage", maxCount: 10 },
@@ -33,7 +33,7 @@ router.post(
   "/type",
   formDataRetrieve.none(),
   jwtMiddleware,
-  hasRole(Roles.ADMIN),
+  hasRole(Roles.USER, Roles.ADMIN),
   hotelController.signNewHotelType
 );
 

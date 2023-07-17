@@ -21,7 +21,7 @@ const {
 // Get all hotel for dashboard (To enable hotel (?))
 module.exports.getAllHotelsDashBoard = catchAsync(async (req, res, next) => {
   const hotels = await Hotel.find({})
-    .populate({ path: "user", select: "_id subName name" })
+    .populate({ path: "user", select: "_id subName name username" })
     .select("hotelName createdAt user isVerified");
 
   return res.status(200).json({
