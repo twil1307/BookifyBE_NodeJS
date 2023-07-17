@@ -38,6 +38,26 @@ module.exports.verifyHotel = catchAsync(async (req, res, next) => {
   });
 });
 
+module.exports.verifyBooking = catchAsync(async (req, res, next) => {
+  const bookingId = req.params.bookingId;
+
+  await Booking.findByIdAndUpdate(bookingId, { $set: { status: true } });
+
+  return res.status(200).json({
+    message: "Accept booking successfully",
+  });
+});
+
+module.exports.disableBooking = catchAsync(async (req, res, next) => {
+  const bookingId = req.params.bookingId;
+
+  await Booking.findByIdAndUpdate(bookingId, { $set: { status: false } });
+
+  return res.status(200).json({
+    message: "Accept booking successfully",
+  });
+});
+
 module.exports.disableHotel = catchAsync(async (req, res, next) => {
   const hotelId = req.params.hotelId;
   await Hotel.findByIdAndUpdate(hotelId, { $set: { isVerified: false } });

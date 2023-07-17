@@ -80,4 +80,18 @@ router.put(
   dashboardController.disableHotel
 );
 
+router.put(
+  "/booking/accept/:bookingId",
+  jwtMiddleware,
+  hasRole(Roles.HOST, Roles.ADMIN),
+  dashboardController.verifyBooking
+);
+
+router.put(
+  "/booking/disable/:bookingId",
+  jwtMiddleware,
+  hasRole(Roles.HOST, Roles.ADMIN),
+  dashboardController.disableBooking
+);
+
 module.exports = router;
